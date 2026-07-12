@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 
 public class CustomRenderPipeline : RenderPipeline 
 {
+
     CameraRender renderer = new CameraRender();
     //旧版抽象方法,占位实现
     protected override void Render(ScriptableRenderContext context, Camera[] cameras) { }
@@ -15,6 +16,9 @@ public class CustomRenderPipeline : RenderPipeline
         {
             renderer.Render(context, cameras[i]);
         }
+    }
+    public CustomRenderPipeline() {
+        GraphicsSettings.useScriptableRenderPipelineBatching = true;
     }
 
 }

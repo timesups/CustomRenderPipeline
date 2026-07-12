@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_Green_Unlit
-  m_Shader: {fileID: 4800000, guid: 46331a74a57a7b6408eecf5e2e0db829, type: 3}
+  m_Shader: {fileID: 4800000, guid: 854a15aee6f0de8449a730f1ef324549, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -78,6 +78,7 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
+    - _BaseColor: {r: 0.053583384, g: 1, b: 0, a: 1}
     - _Color: {r: 0, g: 1, b: 0.06005001, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
