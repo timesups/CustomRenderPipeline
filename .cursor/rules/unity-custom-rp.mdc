@@ -1,0 +1,14 @@
+---
+description: Unity Custom SRP 项目约定（2022.3 LTS）
+alwaysApply: true
+---
+
+# Unity Custom Render Pipeline
+
+- Unity 版本：2022.3 LTS。编辑器改工程资源；Cursor 主要改 C# / Shader / HLSL。
+- 源码根目录：`Assets/Custom RP/`（Runtime、Shaders、ShaderLibrary）。
+- 优先编辑：`*.cs`、`*.shader`、`*.hlsl`、`Packages/manifest.json`、必要的 `ProjectSettings`。
+- 不要手改：`Library/`、`Temp/`、`Logs/`、`obj/`、自动生成的 `*.csproj` / `*.sln`。
+- `.meta` 由 Unity 生成；新增资源后让 Unity 刷新再提交对应 `.meta`，勿随意改 GUID。
+- Shader 与 C# 命名、Include 路径跟现有 Custom RP 风格保持一致。
+- 回答与注释优先使用中文（除非用户要求英文）。

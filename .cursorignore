@@ -1,0 +1,60 @@
+﻿# Unity 生成与缓存（勿索引，体积巨大）
+Library/
+Temp/
+Logs/
+obj/
+Build/
+Builds/
+BuildTest/
+MemoryCaptures/
+Recordings/
+UserSettings/
+.vs/
+
+# 自动生成的解决方案（以 Assets 源码为准）
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# 二进制与大型资源（AI 通常无法有效阅读）
+*.fbx
+*.FBX
+*.blend
+*.Blend
+*.max
+*.psd
+*.PSB
+*.tif
+*.tiff
+*.exr
+*.hdr
+*.tga
+*.dds
+*.wav
+*.mp3
+*.ogg
+*.mp4
+*.mov
+*.avi
+*.unitypackage
+*.apk
+*.aab
+*.app
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.exe
+
+# 可按需取消下一行注释：若 .meta 噪音过大且不需要 AI 改它
+# *.meta

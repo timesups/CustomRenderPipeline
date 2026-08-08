@@ -3,14 +3,14 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 
-
 public partial class CameraRender
 {
     ScriptableRenderContext context;
     Camera camera;
 
     CullingResults cullingResults;
-    static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
+    static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
+        litShaderTagId = new ShaderTagId("CustomLit");
 
     const string bufferName = "Render Camera";
     CommandBuffer buffer = new CommandBuffer()
@@ -18,44 +18,67 @@ public partial class CameraRender
         name = bufferName,
     };
 
-    public void Render(ScriptableRenderContext context, Camera camera)
+    Lighting lighting = new Lighting();
+
+    public void Render(
+        ScriptableRenderContext context, Camera camera,
+        bool useGPUInstacing, bool useDynamciBatching,ShadowSettings shadowSettings)
     {
         this.context = context;
         this.camera = camera;
 
 
-
         PrepareBuffer();
-        //ÒòÎª»áÏò³¡¾°ÖĞÌí¼ÓMesh,ËùÒÔĞèÒªÔÚÌŞ³ıÖ®Ç°µ÷ÓÃ,±£Ö¤ĞÂÌí¼ÓµÄ¶ÔÏó¿ÉÒÔ±»ÌŞ³ı
         PrepareForSceneWindow();
-        if (!Cull()) 
+        if (!Cull(shadowSettings.maxDistance)) 
         {
             return;
         }
+        buffer.BeginSample(SampleName);
+        ExecuteBuffer();
+        lighting.Setup(context,cullingResults,shadowSettings);
+        buffer.EndSample(SampleName);
         Setup();
-        DrawVisibleGeometry();
+        DrawVisibleGeometry(useGPUInstacing, useDynamciBatching);
         DrawUnsupportedShaders();
         DrawGizmos();
+        lighting.Cleanup();
         Submit();
     }
-    void DrawVisibleGeometry() 
+    void DrawVisibleGeometry(bool useGPUInstacing,bool useDynamciBatching) 
     {
         var sortingSettings = new SortingSettings() { 
             criteria = SortingCriteria.CommonOpaque
         };
-        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings);
+        
+        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
+        {
+            enableInstancing = useGPUInstacing,
+            enableDynamicBatching = useDynamciBatching,
+            perObjectData = PerObjectData.Lightmaps |
+                            PerObjectData.LightProbe|
+                            PerObjectData.LightProbeProxyVolume |
+                            PerObjectData.ShadowMask|
+                            PerObjectData.OcclusionProbe|
+                            PerObjectData.OcclusionProbeProxyVolume,
+        };
+        drawingSettings.SetShaderPassName(1, litShaderTagId);
         var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
-
+        
+        //ç»˜åˆ¶æ‰€æœ‰ä¸é€æ˜ç‰©ä½“
         context.DrawRenderers(
             cullingResults,
             ref drawingSettings,
             ref filterSettings
             );
+        //ç»˜åˆ¶å¤©ç©ºç›’
         context.DrawSkybox(camera);
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
         filterSettings.renderQueueRange = RenderQueueRange.transparent;
+
+        //ç»˜åˆ¶æ‰€æœ‰åŠé€æ˜ç‰©ä½“
         context.DrawRenderers(
             cullingResults,
             ref drawingSettings,
@@ -64,7 +87,7 @@ public partial class CameraRender
     }
     void Setup()
     {
-        context.SetupCameraProperties(camera);//´«µİÏà»úÊôĞÔ
+        context.SetupCameraProperties(camera);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
         CameraClearFlags flags = camera.clearFlags;
 
@@ -72,7 +95,7 @@ public partial class CameraRender
             flags <= CameraClearFlags.Depth,
             flags<=CameraClearFlags.Color,
             flags == CameraClearFlags.Color?
-            camera.backgroundColor.linear:Color.clear);//Çå³ıäÖÈ¾Ä¿±ê
+            camera.backgroundColor.linear:Color.clear);//ï¿½ï¿½ï¿½ï¿½ï¿½È¾Ä¿ï¿½ï¿½
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
     }
@@ -80,18 +103,19 @@ public partial class CameraRender
     {
         buffer.EndSample(SampleName);
         ExecuteBuffer();
-        context.Submit(); //Ìá½»ÃüÁî
+        context.Submit(); //ï¿½á½»ï¿½ï¿½ï¿½ï¿½
     }
 
     void ExecuteBuffer()
     {
-        context.ExecuteCommandBuffer(buffer);//Ö´ĞĞbuffer
-        buffer.Clear();//Çå¿Õbuffer
+        context.ExecuteCommandBuffer(buffer);//Ö´ï¿½ï¿½buffer
+        buffer.Clear();
     }
-    bool Cull() 
+    bool Cull(float maxShadowDistance) 
     {
         if(camera.TryGetCullingParameters(out ScriptableCullingParameters p)) 
         {
+            p.shadowDistance = Mathf.Min(maxShadowDistance, camera.farClipPlane);
             cullingResults = context.Cull(ref p);//execute culling 
             return true;
         }

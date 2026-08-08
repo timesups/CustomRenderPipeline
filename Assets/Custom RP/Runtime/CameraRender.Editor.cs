@@ -24,17 +24,17 @@ partial class CameraRender
     static Material errorMaterial;
 
     string SampleName { get; set; }
-    partial void PrepareBuffer() 
+    partial void PrepareBuffer()
     {
         Profiler.BeginSample("Editor Only");
         buffer.name = SampleName = camera.name;
         Profiler.EndSample();
     }
-    partial void PrepareForSceneWindow() 
+    partial void PrepareForSceneWindow()
     {
-        if (camera.cameraType == CameraType.SceneView) 
+        if (camera.cameraType == CameraType.SceneView)
         {
-            //Ïò³¡¾°ÖÐÌí¼Ó¼¸ºÎÌå
+            //ï¿½ò³¡¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¼ï¿½ï¿½ï¿½ï¿½ï¿½
             ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
         }
     }
@@ -47,9 +47,9 @@ partial class CameraRender
         }
     }
 
-    partial void DrawUnsupportedShaders() 
+    partial void DrawUnsupportedShaders()
     {
-        if (errorMaterial == null) 
+        if (errorMaterial == null)
         {
             errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
         }
@@ -62,7 +62,7 @@ partial class CameraRender
             overrideMaterial = errorMaterial
         };
 
-        for (int i = 1; i < legacyShaderTagIds.Length; i++) 
+        for (int i = 1; i < legacyShaderTagIds.Length; i++)
         {
             drawsettings.SetShaderPassName(i, legacyShaderTagIds[i]);
         }

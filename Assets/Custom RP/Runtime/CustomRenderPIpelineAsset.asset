@@ -12,3 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f54eb0dc2e76a54b9514b155eb9ddef, type: 3}
   m_Name: CustomRenderPIpelineAsset
   m_EditorClassIdentifier: 
+  useGPUInstacing: 1
+  useSRPBatcher: 1
+  useDynamicBatching: 0
+  shadows:
+    maxDistance: 7.7
+    distanceFade: 0.061
+    directional:
+      atlasSize: 4096
+      filter: 1
+      cascadeCount: 4
+      cascadeRatio1: 0.064
+      cascadeRatio2: 0.209
+      cascadeRatio3: 0.497
+      cascadeFade: 1
+      cascadeBlend: 1
