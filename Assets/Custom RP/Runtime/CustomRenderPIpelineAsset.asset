@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: CustomRenderPIpelineAsset
   m_EditorClassIdentifier: 
   useGPUInstacing: 1
-  useSRPBatcher: 1
+  useSRPBatcher: 0
   useDynamicBatching: 0
   shadows:
-    maxDistance: 7.7
-    distanceFade: 0.061
+    maxDistance: 100
+    distanceFade: 0.381
     directional:
       atlasSize: 4096
       filter: 1

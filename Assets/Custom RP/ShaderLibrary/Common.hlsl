@@ -14,8 +14,8 @@
 #define UNITY_MATRIX_P glstate_matrix_projection
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
 
 #if defined(_SHADOW_MASK_DISTANCE)
 	#define SHADOWS_SHADOWMASK
@@ -31,6 +31,23 @@ float Square(float v)
 float DistanceSquared(float3 pA, float3 pB)
 {
 	return dot(pA - pB, pA - pB);
+}
+
+void ClipLOD(float2 positionCS,float fade)
+{
+#if defined(LOD_FADE_CROSSFADE)
+	float dither = InterleavedGradientNoise(positionCS.xy,0);
+	clip(fade + (fade <0.0?dither:-dither));
+#endif
+}
+
+float3 DecodeNormal(float4 sample,float scale)
+{
+#if defined(UNITY_NO_DXT5nm)
+	return normalize(UnpackNormalRGB(sample,scale));
+#else
+	return normalize(UnpackNormalmapRGorAG(sample,scale));
+#endif
 }
 
 #endif

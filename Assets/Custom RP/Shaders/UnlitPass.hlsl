@@ -27,7 +27,9 @@ Varyings UnlitPassVertex(Attributes input)
     return output;
 }
 
-
+float GetFresnel (float2 baseUV) {
+	return 0.0;
+}
 
 float4 UnlitPassFragment(Varyings input):SV_Target
 {

@@ -21,6 +21,7 @@ CBUFFER_START(UnityPerDraw)
 
 
 	float4 unity_ProbesOcclusion;
+	float4 unity_SpecCube0_HDR ;
 
 
 	float4 unity_ProbeVolumeParams;

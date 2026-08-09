@@ -143,7 +143,7 @@ ShadowData GetShadowData(Surface surfaceWS)
 float GetCascadedShadow(DirectionalShadowData directional, ShadowData global, Surface surfaceWS)
 {
 
-	float3 normalBias = surfaceWS.normal *
+	float3 normalBias = surfaceWS.interpolatedNormal *
 		(directional.normalBias * _CascadeData[global.cascadeIndex].y);
 	float3 positionSTS = mul(
 		_DirectionalShadowMatrices[directional.tileIndex],

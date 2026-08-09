@@ -60,7 +60,8 @@ public partial class CameraRender
                             PerObjectData.LightProbeProxyVolume |
                             PerObjectData.ShadowMask|
                             PerObjectData.OcclusionProbe|
-                            PerObjectData.OcclusionProbeProxyVolume,
+                            PerObjectData.OcclusionProbeProxyVolume|
+                            PerObjectData.ReflectionProbes,
         };
         drawingSettings.SetShaderPassName(1, litShaderTagId);
         var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
