@@ -44,6 +44,19 @@ public class ShadowSettings
 		public Vector3 CascadeRatios =>
 			new Vector3(cascadeRatio1, cascadeRatio2, cascadeRatio3);
 	}
+	[System.Serializable]
+	public struct Other
+	{
+		public MapSize atlasSize;
+		public FilterMode filter;
+	}
+
+	public Other other = new Other
+	{
+		atlasSize = MapSize._1024,
+		filter = FilterMode.PCF2x2
+	};
+	
 
 	[Min(0.001f)]
 	public float maxDistance = 100f;

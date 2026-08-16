@@ -1,7 +1,7 @@
 #ifndef CUSTOM_SHADOW_CASTER_PASS_INCLUDED
 #define CUSTOM_SHADOW_CASTER_PASS_INCLUDED
 
-
+bool _ShadowPancaking;
 
 struct Attributes
 {
@@ -25,6 +25,8 @@ Varyings ShadowCasterPassVertex(Attributes input)
 	float3 positionWS = TransformObjectToWorld(input.positionOS);
 	output.positionCS = TransformWorldToHClip(positionWS);
 
+	if(_ShadowPancaking)
+	{	
 	#if UNITY_REVERSED_Z
 		output.positionCS.z =
 			min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
@@ -32,6 +34,7 @@ Varyings ShadowCasterPassVertex(Attributes input)
 		output.positionCS.z =
 			max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
 	#endif
+	}
 
 	float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
 	output.baseUV = input.baseUV * baseST.xy + baseST.zw;

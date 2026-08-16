@@ -20,9 +20,15 @@ public partial class CameraRender
 
     Lighting lighting = new Lighting();
 
+    PostFXStack postFXStack = new PostFXStack();
+
+    static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
+
     public void Render(
         ScriptableRenderContext context, Camera camera,
-        bool useGPUInstacing, bool useDynamciBatching,ShadowSettings shadowSettings)
+        bool useGPUInstacing, bool useDynamciBatching,
+        ShadowSettings shadowSettings,
+        bool useLightsPerObject,PostFXSettings postFXSettings)
     {
         this.context = context;
         this.camera = camera;
@@ -36,17 +42,32 @@ public partial class CameraRender
         }
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
-        lighting.Setup(context,cullingResults,shadowSettings);
+        lighting.Setup(context,cullingResults,shadowSettings,useLightsPerObject);
+        postFXStack.Setup(context, camera, postFXSettings);
         buffer.EndSample(SampleName);
         Setup();
-        DrawVisibleGeometry(useGPUInstacing, useDynamciBatching);
+        DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
         DrawUnsupportedShaders();
-        DrawGizmos();
-        lighting.Cleanup();
+
+
+        DrawGizmosBeforFX();
+        if (postFXStack.IsActive) 
+        {
+            postFXStack.Render(frameBufferId);
+        }
+        DrawGizmosAfterFX();
+
+
+        Cleanup();
         Submit();
     }
-    void DrawVisibleGeometry(bool useGPUInstacing,bool useDynamciBatching) 
+    void DrawVisibleGeometry(
+        bool useGPUInstacing, bool useDynamciBatching, bool useLightsPerObject)
     {
+        PerObjectData lightsPerObjectFlags = useLightsPerObject ?
+            PerObjectData.LightData | PerObjectData.LightIndices :
+            PerObjectData.None;
+
         var sortingSettings = new SortingSettings() { 
             criteria = SortingCriteria.CommonOpaque
         };
@@ -61,7 +82,8 @@ public partial class CameraRender
                             PerObjectData.ShadowMask|
                             PerObjectData.OcclusionProbe|
                             PerObjectData.OcclusionProbeProxyVolume|
-                            PerObjectData.ReflectionProbes,
+                            PerObjectData.ReflectionProbes|
+                            lightsPerObjectFlags,
         };
         drawingSettings.SetShaderPassName(1, litShaderTagId);
         var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
@@ -92,6 +114,25 @@ public partial class CameraRender
 
         CameraClearFlags flags = camera.clearFlags;
 
+        if (postFXStack.IsActive) 
+        {
+            if (flags > CameraClearFlags.Color) 
+            {
+                flags = CameraClearFlags.Color;
+            }
+
+            buffer.GetTemporaryRT(
+                frameBufferId, camera.pixelWidth, camera.pixelHeight,
+                32, FilterMode.Bilinear, RenderTextureFormat.Default
+                );
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.DontCare,
+                RenderBufferStoreAction.Store
+                );
+        }
+
+
         buffer.ClearRenderTarget(
             flags <= CameraClearFlags.Depth,
             flags<=CameraClearFlags.Color,
@@ -104,7 +145,7 @@ public partial class CameraRender
     {
         buffer.EndSample(SampleName);
         ExecuteBuffer();
-        context.Submit(); //�ύ����
+        context.Submit();
     }
 
     void ExecuteBuffer()
@@ -121,5 +162,14 @@ public partial class CameraRender
             return true;
         }
         return false;
+    }
+
+    void Cleanup() 
+    {
+        lighting.Cleanup();
+        if (postFXStack.IsActive) 
+        {
+            buffer.ReleaseTemporaryRT(frameBufferId);
+        }
     }
 }

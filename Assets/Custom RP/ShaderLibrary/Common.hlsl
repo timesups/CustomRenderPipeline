@@ -13,14 +13,15 @@
 #define UNITY_PREV_MATRIX_I_M unity_prev_MatrixIM
 #define UNITY_MATRIX_P glstate_matrix_projection
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
-
 #if defined(_SHADOW_MASK_DISTANCE)
 	#define SHADOWS_SHADOWMASK
 #endif
+// 必须先于 SpaceTransforms：Instancing 会重写 UNITY_MATRIX_M，
+// 否则 TransformObjectToWorld 会读到错误/过期的物体矩阵。
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
 
 float Square(float v)

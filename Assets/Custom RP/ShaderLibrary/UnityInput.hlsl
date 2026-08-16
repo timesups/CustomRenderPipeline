@@ -7,6 +7,9 @@ CBUFFER_START(UnityPerDraw)
 	float4 unity_LODFade;
 	real4 unity_WorldTransformParams;
 
+	real4 unity_LightData;
+	real4 unity_LightIndices[2];
+
 	float4 unity_LightmapST;
 	float4 unity_DynamicLightmapST;
 
@@ -38,6 +41,8 @@ float4x4 unity_prev_MatrixIM;
 float4x4 glstate_matrix_projection;
 
 float3 _WorldSpaceCameraPos;
+
+float4 _ProjectionParams;
 
 
 
