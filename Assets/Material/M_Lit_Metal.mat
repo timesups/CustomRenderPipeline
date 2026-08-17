@@ -90,7 +90,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _Metallic: 1
+    - _Metallic: 0
     - _Mode: 0
     - _NormalScale: 1
     - _Occlusion: 0.5
@@ -99,7 +99,7 @@ Material:
     - _Premultiply_alpha: 0
     - _ReceiveShadows: 1
     - _Shadows: 0
-    - _Smoothness: 1
+    - _Smoothness: 0.834
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1

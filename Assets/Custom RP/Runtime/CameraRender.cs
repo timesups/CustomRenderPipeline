@@ -24,14 +24,17 @@ public partial class CameraRender
 
     static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
 
+    bool allowHDR;
+
     public void Render(
         ScriptableRenderContext context, Camera camera,
         bool useGPUInstacing, bool useDynamciBatching,
         ShadowSettings shadowSettings,
-        bool useLightsPerObject,PostFXSettings postFXSettings)
+        bool useLightsPerObject,PostFXSettings postFXSettings,bool allowHDR)
     {
         this.context = context;
         this.camera = camera;
+        this.allowHDR = allowHDR;
 
 
         PrepareBuffer();
@@ -43,7 +46,8 @@ public partial class CameraRender
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
         lighting.Setup(context,cullingResults,shadowSettings,useLightsPerObject);
-        postFXStack.Setup(context, camera, postFXSettings);
+        postFXStack.Setup(context, camera, postFXSettings,allowHDR);
+
         buffer.EndSample(SampleName);
         Setup();
         DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
@@ -123,7 +127,8 @@ public partial class CameraRender
 
             buffer.GetTemporaryRT(
                 frameBufferId, camera.pixelWidth, camera.pixelHeight,
-                32, FilterMode.Bilinear, RenderTextureFormat.Default
+                32, FilterMode.Bilinear,
+                allowHDR? RenderTextureFormat.DefaultHDR:RenderTextureFormat.Default
                 );
             buffer.SetRenderTarget(
                 frameBufferId,

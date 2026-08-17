@@ -11,7 +11,12 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset
     [SerializeField]
     bool useGPUInstacing = true, useSRPBatcher = true, useLightsPerObject=false, useDynamicBatching = false;
     [SerializeField]
+    bool allowHDR = true;
+    [SerializeField]
     PostFXSettings postFXSettings = default;
+
+
+
     [SerializeField]
     ShadowSettings shadows = default;
 
@@ -23,6 +28,6 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset
             useGPUInstacing,
             useDynamicBatching, 
             useSRPBatcher,
-            shadows, useLightsPerObject,postFXSettings);
+            shadows, useLightsPerObject,postFXSettings, allowHDR);
     }
 }

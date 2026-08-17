@@ -4,6 +4,35 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Rendering/Custom Post FX Settings")]
 public class PostFXSettings : ScriptableObject 
 {
+    [System.Serializable]
+    public struct BloomSettings 
+    {
+        [Range(0f, 16f)]
+        public int maxInterations;
+
+        [Min(1f)]
+        public int downscaleLimit;
+
+        public bool bicubicUpsampling;
+
+        [Min(0f)]
+        public float threshold;
+
+        [Range(0f, 1f)]
+        public float thresholdKnee;
+
+        [Min(0f)]
+        public float intensity;
+
+        public bool fadeFireFiles;
+    }
+
+    [SerializeField]
+    BloomSettings bloom = default;
+
+    public BloomSettings Bloom => bloom;
+
+
     [SerializeField]
     Shader shader = default;
     [System.NonSerialized]

@@ -12,4 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6bc29eaaeca0394daf4065ece618726, type: 3}
   m_Name: New Post FX Settings
   m_EditorClassIdentifier: 
+  bloom:
+    maxInterations: 16
+    downscaleLimit: 7
+    bicubicUpsampling: 0
+    threshold: 1
+    thresholdKnee: 0
+    intensity: 0.5
   shader: {fileID: 4800000, guid: 3a4f50c24e2845d49a6bd503e1d41613, type: 3}

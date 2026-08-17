@@ -12,10 +12,13 @@ public partial class CustomRenderPipeline : RenderPipeline
     ShadowSettings shadowSettings;
     PostFXSettings postFXSettings;
 
+    bool allowHDR;
+
     public CustomRenderPipeline(
         bool useGPUInstacing, bool useDynamciBatching, 
         bool useSRPBatcher,ShadowSettings shadowSettings,
-        bool useLightsPerObject,PostFXSettings postFXSettings) 
+        bool useLightsPerObject,PostFXSettings postFXSettings,
+        bool allowHDR) 
     {
 
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
@@ -24,6 +27,7 @@ public partial class CustomRenderPipeline : RenderPipeline
         this.shadowSettings = shadowSettings;
         this.useLightsPerObject = useLightsPerObject;
         this.postFXSettings = postFXSettings;
+        this.allowHDR = allowHDR;
         GraphicsSettings.lightsUseLinearIntensity = true;
 
         InitializeForEditor();
@@ -39,7 +43,7 @@ public partial class CustomRenderPipeline : RenderPipeline
             renderer.Render(context, cameras[i],
                 useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
-                postFXSettings);
+                postFXSettings,allowHDR);
         }
     }
 }
