@@ -4,9 +4,13 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Rendering/Custom Post FX Settings")]
 public class PostFXSettings : ScriptableObject 
 {
+
+
     [System.Serializable]
     public struct BloomSettings 
     {
+        public enum Mode { Additive, Scattering }
+
         [Range(0f, 16f)]
         public int maxInterations;
 
@@ -25,12 +29,30 @@ public class PostFXSettings : ScriptableObject
         public float intensity;
 
         public bool fadeFireFiles;
+
+        public Mode mode;
+
+        [Range(0f, 1f)]
+        public float scatter;
+    }
+
+    [System.Serializable]
+    public struct ToneMappingSettings 
+    {
+        public enum Mode { None=-1,ACES, Neutral,Reinhard}
+        public Mode mode;
     }
 
     [SerializeField]
     BloomSettings bloom = default;
 
+    [SerializeField]
+    ToneMappingSettings tonemapping = default;
+
+
+
     public BloomSettings Bloom => bloom;
+    public ToneMappingSettings ToneMapping => tonemapping;
 
 
     [SerializeField]
