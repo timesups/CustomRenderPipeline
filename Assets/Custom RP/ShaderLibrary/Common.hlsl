@@ -51,4 +51,27 @@ float3 DecodeNormal(float4 sample,float scale)
 #endif
 }
 
+// 与 GLEngine Functions.glsl EncodeNormalOct / DecodeNormalOct 一致
+float2 EncodeNormalOct(float3 n)
+{
+	n = normalize(n);
+	float2 p = n.xy * (1.0 / (abs(n.x) + abs(n.y) + abs(n.z)));
+	if (n.z < 0.0)
+	{
+		p = (1.0 - abs(p.yx)) * sign(p);
+	}
+	return p * 0.5 + 0.5;
+}
+
+float3 DecodeNormalOct(float2 enc)
+{
+	float2 p = enc * 2.0 - 1.0;
+	float3 n = float3(p.x, p.y, 1.0 - abs(p.x) - abs(p.y));
+	if (n.z < 0.0)
+	{
+		n.xy = (1.0 - abs(n.yx)) * sign(n.xy);
+	}
+	return normalize(n);
+}
+
 #endif

@@ -1,11 +1,14 @@
 #ifndef CUSTOM_CUSTOM_DEPTH_PASS_INCLUDED
 #define CUSTOM_CUSTOM_DEPTH_PASS_INCLUDED
 
-bool _ShadowPancaking;
+// 对齐 GLEngine CustomDepth.glsl：
+// FragColor = vec4(EncodeNormalOct(NormalWS), gl_FragCoord.z, 0)
+// 用于水体折射等：采样侧 DecodeNormalOct(xy) + z 为硬件深度
 
 struct Attributes
 {
 	float3 positionOS : POSITION;
+	float3 normalOS : NORMAL;
 	float2 baseUV : TEXCOORD0;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -13,6 +16,7 @@ struct Attributes
 struct Varyings
 {
 	float4 positionCS : SV_POSITION;
+	float3 normalWS : VAR_NORMAL;
 	float2 baseUV : VAR_BASE_UV;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -22,38 +26,23 @@ Varyings CustomDepthPassVertex(Attributes input)
 	Varyings output;
 	UNITY_SETUP_INSTANCE_ID(input);
 	UNITY_TRANSFER_INSTANCE_ID(input, output);
+
 	float3 positionWS = TransformObjectToWorld(input.positionOS);
 	output.positionCS = TransformWorldToHClip(positionWS);
-
-	if(_ShadowPancaking)
-	{
-	#if UNITY_REVERSED_Z
-		output.positionCS.z =
-			min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
-	#else
-		output.positionCS.z =
-			max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
-	#endif
-	}
+	output.normalWS = TransformObjectToWorldNormal(input.normalOS);
 
 	float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
 	output.baseUV = input.baseUV * baseST.xy + baseST.zw;
 	return output;
 }
 
-void CustomDepthPassFragment(Varyings input)
+float4 CustomDepthPassFragment(Varyings input) : SV_TARGET
 {
 	UNITY_SETUP_INSTANCE_ID(input);
-	ClipLOD(input.positionCS.xy,unity_LODFade.x);
-	float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.baseUV);
-	float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-	float4 base = baseMap * baseColor;
-	#if defined(_SHADOWS_CLIP)
-		clip(base.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
-	#elif defined(_SHADOWS_DITHER)
-		float dither = InterleavedGradientNoise(input.positionCS.xy, 0);
-		clip(base.a - dither);
-	#endif
+
+	float3 normalWS = normalize(input.normalWS);
+	// SV_POSITION.z 对应 gl_FragCoord.z（窗口深度）
+	return float4(EncodeNormalOct(normalWS), input.positionCS.z, 0.0);
 }
 
 #endif

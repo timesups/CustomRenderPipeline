@@ -23,7 +23,7 @@ Varyings UnlitPassVertex(Attributes input)
     float3 positionWS = TransformObjectToWorld(input.positionOS);
     output.positionCS = TransformWorldToHClip(positionWS);
     output.baseUV =TransformBaseUV(input.baseUV);
-    
+
     return output;
 }
 
@@ -42,8 +42,15 @@ float4 UnlitPassFragment(Varyings input):SV_Target
     float3 sceneColor = SAMPLE_TEXTURE2D(
         _SceneColor, sampler_SceneColor, screenUV
     ).rgb;
+
+    float4 customDepth = SAMPLE_TEXTURE2D(
+        _CustomDepth, sampler_CustomDepth, screenUV
+    );
+
+
+    float3 normal = DecodeNormalOct(customDepth.xy);
     // 保持 HDR 线性，与材质色混合；SDR 由 PostFX ToneMapping 统一处理
-    base.rgb =  sceneColor;
+    base.rgb =  normal;
     return base;
 }
 

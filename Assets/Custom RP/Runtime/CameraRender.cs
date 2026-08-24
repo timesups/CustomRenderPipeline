@@ -10,7 +10,8 @@ public partial class CameraRender
 
     CullingResults cullingResults;
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
-        litShaderTagId = new ShaderTagId("CustomLit");
+        litShaderTagId = new ShaderTagId("CustomLit"),
+        CustomDepthTagId = new ShaderTagId("CustomDepth");
 
     const string bufferName = "Render Camera";
     CommandBuffer buffer = new CommandBuffer()
@@ -23,7 +24,8 @@ public partial class CameraRender
     PostFXStack postFXStack = new PostFXStack();
 
     static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer"),
-        SceneColorID = Shader.PropertyToID("_SceneColor");
+        SceneColorID = Shader.PropertyToID("_SceneColor"),
+        CustomDepthBufferId = Shader.PropertyToID("_CustomDepth");
 
     bool allowHDR;
 
@@ -50,8 +52,10 @@ public partial class CameraRender
         postFXStack.Setup(context, camera, postFXSettings,allowHDR);
 
         buffer.EndSample(SampleName);
-        Setup();
-        DrawCustomDepth();
+
+        context.SetupCameraProperties(camera);
+
+        DrawCustomDepth(useGPUInstacing, useDynamciBatching);
         DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
         DrawUnsupportedShaders();
 
@@ -67,14 +71,87 @@ public partial class CameraRender
         Cleanup();
         Submit();
     }
-    void DrawCustomDepth() 
+    void DrawCustomDepth(
+        bool useGPUInstacing, bool useDynamciBatching)
     {
+        buffer.BeginSample("CustomDepth");
 
+        buffer.GetTemporaryRT(
+            CustomDepthBufferId, camera.pixelWidth, camera.pixelHeight,
+            24, FilterMode.Point,
+            RenderTextureFormat.ARGBFloat
+            );
+        buffer.SetRenderTarget(
+            CustomDepthBufferId,
+            RenderBufferLoadAction.DontCare,
+            RenderBufferStoreAction.Store
+            );
+        buffer.ClearRenderTarget(true, true, Color.clear);
+        ExecuteBuffer();
 
+        var sortingSettings = new SortingSettings(camera)
+        {
+            criteria = SortingCriteria.CommonOpaque
+        };
+
+        var drawingSettings = new DrawingSettings(CustomDepthTagId, sortingSettings)
+        {
+            enableInstancing = useGPUInstacing,
+            enableDynamicBatching = useDynamciBatching
+        };
+        var filterSettings = new FilteringSettings(
+            RenderQueueRange.opaque, -1, MeshRenderSettings.CustomDepthRenderingLayer);
+
+        context.DrawRenderers(
+            cullingResults,
+            ref drawingSettings,
+            ref filterSettings
+            );
+
+        // 半透明也写入（对齐 GLEngine）
+        sortingSettings.criteria = SortingCriteria.CommonTransparent;
+        drawingSettings.sortingSettings = sortingSettings;
+        filterSettings.renderQueueRange = RenderQueueRange.transparent;
+        context.DrawRenderers(
+            cullingResults,
+            ref drawingSettings,
+            ref filterSettings
+            );
+
+        buffer.EndSample("CustomDepth");
+        ExecuteBuffer();
     }
     void DrawVisibleGeometry(
         bool useGPUInstacing, bool useDynamciBatching, bool useLightsPerObject)
     {
+        CameraClearFlags flags = camera.clearFlags;
+        if (postFXStack.IsActive)
+        {
+            if (flags > CameraClearFlags.Color)
+            {
+                flags = CameraClearFlags.Color;
+            }
+
+            buffer.GetTemporaryRT(
+                frameBufferId, camera.pixelWidth, camera.pixelHeight,
+                32, FilterMode.Bilinear,
+                allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default
+                );
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.DontCare,
+                RenderBufferStoreAction.Store
+                );
+        }
+
+        buffer.ClearRenderTarget(
+            flags <= CameraClearFlags.Depth,
+            flags <= CameraClearFlags.Color,
+            flags == CameraClearFlags.Color ?
+            camera.backgroundColor.linear : Color.clear);//�����ȾĿ��
+        buffer.BeginSample(SampleName);
+        ExecuteBuffer();
+
         PerObjectData lightsPerObjectFlags = useLightsPerObject ?
             PerObjectData.LightData | PerObjectData.LightIndices :
             PerObjectData.None;
@@ -136,40 +213,6 @@ public partial class CameraRender
             ref filterSettings
             );
     }
-    void Setup()
-    {
-        context.SetupCameraProperties(camera);//�����������
-
-        CameraClearFlags flags = camera.clearFlags;
-
-        if (postFXStack.IsActive) 
-        {
-            if (flags > CameraClearFlags.Color) 
-            {
-                flags = CameraClearFlags.Color;
-            }
-
-            buffer.GetTemporaryRT(
-                frameBufferId, camera.pixelWidth, camera.pixelHeight,
-                32, FilterMode.Bilinear,
-                allowHDR? RenderTextureFormat.DefaultHDR:RenderTextureFormat.Default
-                );
-            buffer.SetRenderTarget(
-                frameBufferId,
-                RenderBufferLoadAction.DontCare,
-                RenderBufferStoreAction.Store
-                );
-        }
-
-
-        buffer.ClearRenderTarget(
-            flags <= CameraClearFlags.Depth,
-            flags<=CameraClearFlags.Color,
-            flags == CameraClearFlags.Color?
-            camera.backgroundColor.linear:Color.clear);//�����ȾĿ��
-        buffer.BeginSample(SampleName);
-        ExecuteBuffer();
-    }
     void Submit() 
     {
         buffer.EndSample(SampleName);
@@ -201,5 +244,6 @@ public partial class CameraRender
             buffer.ReleaseTemporaryRT(SceneColorID);
             buffer.ReleaseTemporaryRT(frameBufferId);
         }
+        buffer.ReleaseTemporaryRT(CustomDepthBufferId);
     }
 }

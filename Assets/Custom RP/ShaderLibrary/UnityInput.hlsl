@@ -48,6 +48,7 @@ float4 _ScreenParams;
 
 // Transparent grab: HDR linear copy of opaque + skybox
 TEXTURE2D(_SceneColor);
+TEXTURE2D(_CustomDepth);
 SAMPLER(sampler_SceneColor);
-
+SAMPLER(sampler_CustomDepth);
 #endif
