@@ -38,7 +38,12 @@ float4 UnlitPassFragment(Varyings input):SV_Target
 #if defined(_CLIPPING)
     clip(base.a - GetCutoff(input.baseUV));
 #endif
-
+    float2 screenUV = input.positionCS.xy / _ScreenParams.xy;
+    float3 sceneColor = SAMPLE_TEXTURE2D(
+        _SceneColor, sampler_SceneColor, screenUV
+    ).rgb;
+    // 保持 HDR 线性，与材质色混合；SDR 由 PostFX ToneMapping 统一处理
+    base.rgb =  sceneColor;
     return base;
 }
 

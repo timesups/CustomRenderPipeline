@@ -4,7 +4,7 @@ Shader "Custom RP/Lit"
 	{
 		_BaseMap("Texture", 2D) = "white" {}
 		_BaseColor("Color", Color) = (0.5, 0.5, 0.5, 1.0)
-		
+
 		[NoScaleOffset]_EmissiveMap("Emissive Map",2D) = "black"{}
 		[HDR]_EmissiveColor("Emissive Color",Color) = (0.0,0.0,0.0,0.0)
 
@@ -96,6 +96,7 @@ Shader "Custom RP/Lit"
 			#include "ShadowCasterPass.hlsl"
 			ENDHLSL
 		}
+
 		Pass {
 			Tags {
 				"LightMode" = "Meta"

@@ -44,9 +44,10 @@ float3 _WorldSpaceCameraPos;
 
 float4 _ProjectionParams;
 
+float4 _ScreenParams;
 
-
-
-
+// Transparent grab: HDR linear copy of opaque + skybox
+TEXTURE2D(_SceneColor);
+SAMPLER(sampler_SceneColor);
 
 #endif

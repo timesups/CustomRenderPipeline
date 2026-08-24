@@ -52,6 +52,27 @@ Shader "Custom RP/Unlit"
 			#include "ShadowCasterPass.hlsl"
 			ENDHLSL
 		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode" = "CustomDepth"
+			}
+
+			ColorMask 0
+
+			HLSLPROGRAM
+			#pragma target 3.5
+			#pragma shader_feature _ _SHADOWS_CLIP _SHADOWS_DITHER
+			#pragma multi_compile_instancing
+			#pragma vertex CustomDepthPassVertex
+			#pragma fragment CustomDepthPassFragment
+			#include "CustomDepthPass.hlsl"
+			ENDHLSL
+		}
+
+
 		Pass {
 			Tags {
 				"LightMode" = "Meta"

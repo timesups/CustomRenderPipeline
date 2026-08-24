@@ -22,7 +22,8 @@ public partial class CameraRender
 
     PostFXStack postFXStack = new PostFXStack();
 
-    static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
+    static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer"),
+        SceneColorID = Shader.PropertyToID("_SceneColor");
 
     bool allowHDR;
 
@@ -50,6 +51,7 @@ public partial class CameraRender
 
         buffer.EndSample(SampleName);
         Setup();
+        DrawCustomDepth();
         DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
         DrawUnsupportedShaders();
 
@@ -64,6 +66,11 @@ public partial class CameraRender
 
         Cleanup();
         Submit();
+    }
+    void DrawCustomDepth() 
+    {
+
+
     }
     void DrawVisibleGeometry(
         bool useGPUInstacing, bool useDynamciBatching, bool useLightsPerObject)
@@ -100,6 +107,23 @@ public partial class CameraRender
             );
         //绘制天空盒
         context.DrawSkybox(camera);
+
+        // 拷贝不透明结果供半透明采样（保持 HDR 线性，不在此做 tonemap）
+        if (postFXStack.IsActive)
+        {
+            buffer.GetTemporaryRT(
+                SceneColorID, camera.pixelWidth, camera.pixelHeight,
+                0, FilterMode.Bilinear,
+                allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default
+                );
+            buffer.Blit(frameBufferId, SceneColorID);
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.Load,
+                RenderBufferStoreAction.Store
+                );
+            ExecuteBuffer();
+        }
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
@@ -174,6 +198,7 @@ public partial class CameraRender
         lighting.Cleanup();
         if (postFXStack.IsActive) 
         {
+            buffer.ReleaseTemporaryRT(SceneColorID);
             buffer.ReleaseTemporaryRT(frameBufferId);
         }
     }
