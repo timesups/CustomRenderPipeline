@@ -1,4 +1,4 @@
-Shader "Custom RP/Lit"
+﻿Shader "Custom RP/Lit"
 {
 	Properties
 	{
@@ -36,9 +36,13 @@ Shader "Custom RP/Lit"
 		[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", Float) = 0
 		[Enum(Off, 0, On, 1)] _ZWrite("Z Write", Float) = 1
 
+		_OutlineWidth("Outline Width", Float) = 0.1
 
 		[HideInInspector] _MainTex("Texture for Lightmap", 2D) = "white" {}
 		[HideInInspector] _Color("Color for Lightmap", Color) = (0.5, 0.5, 0.5, 1.0)
+
+
+
 	}
 
 	SubShader
@@ -76,7 +80,55 @@ Shader "Custom RP/Lit"
 			#include "LitPass.hlsl"
 			ENDHLSL
 		}
+		Pass
+		{
+			Tags
+			{
+				"LightMode" = "OutlineStencil"
+			}
 
+			ColorMask 0
+			ZWrite Off
+
+			Stencil
+			{
+				Ref 1
+				Comp Always
+				Pass Replace
+			}
+
+			HLSLPROGRAM
+			#pragma target 3.5
+			#pragma multi_compile_instancing
+			#pragma vertex OutlineStencilPassVertex
+			#pragma fragment OutlineStencilPassFragment
+			#include "OutlineStencilPass.hlsl"
+			ENDHLSL
+		}
+		Pass
+		{
+			Tags
+			{
+				"LightMode" = "Outline"
+			}
+
+			Stencil
+			{
+				Ref 1
+				Comp NotEqual
+				Pass Keep
+			}
+			Cull Back
+			ZWrite Off
+
+			HLSLPROGRAM
+			#pragma target 3.5
+			#pragma multi_compile_instancing
+			#pragma vertex OutlinePassVertex
+			#pragma fragment OutlinePassFragment
+			#include "OutlinePass.hlsl"
+			ENDHLSL
+		}
 		Pass
 		{
 			Tags
@@ -117,7 +169,6 @@ Shader "Custom RP/Lit"
 			#include "CustomDepthPass.hlsl"
 			ENDHLSL
 		}
-
 		Pass {
 			Tags {
 				"LightMode" = "Meta"

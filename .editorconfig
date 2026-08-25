@@ -1,0 +1,7 @@
+﻿# 统一源码编码：UTF-8 with BOM（Cursor / VS / Unity 互通）
+root = true
+
+[*]
+charset = utf-8-bom
+insert_final_newline = true
+trim_trailing_whitespace = true

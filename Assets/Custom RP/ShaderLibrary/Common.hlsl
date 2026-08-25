@@ -1,4 +1,4 @@
-#ifndef CUSTOM_COMMON_INCLUDED
+﻿#ifndef CUSTOM_COMMON_INCLUDED
 #define CUSTOM_COMMON_INCLUDED
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
@@ -72,6 +72,43 @@ float3 DecodeNormalOct(float2 enc)
 		n.xy = (1.0 - abs(n.yx)) * sign(n.xy);
 	}
 	return normalize(n);
+}
+
+// 对齐 GLEngine ReconstructPositionWS；rawDepth 为 CustomDepth 写入的窗口深度 [0,1]
+float3 ReconstructPositionWS(float2 uv, float rawDepth)
+{
+	float4 positionCS = float4(uv * 2.0 - 1.0, rawDepth, 1.0);
+#if UNITY_UV_STARTS_AT_TOP
+	positionCS.y = -positionCS.y;
+#endif
+#if !UNITY_REVERSED_Z
+	positionCS.z = rawDepth * 2.0 - 1.0;
+#endif
+	float4 viewPos = mul(unity_CameraInvProjection, positionCS);
+	viewPos.xyz /= max(viewPos.w, 1e-6);
+	return mul(UNITY_MATRIX_I_V, float4(viewPos.xyz, 1.0)).xyz;
+}
+
+// CustomDepth RT 被 Clear 后 z=0；在 Reversed-Z 下会被误重建到远平面
+bool IsValidCustomDepth(float4 sample)
+{
+	return sample.z > 1e-5;
+}
+
+float EncodeDeviceDepth(float4 positionCS)
+{
+	// 与 Unity 深度缓冲一致，对应 GLEngine 的 gl_FragCoord.z
+#if defined(SHADER_API_GLCORE) || defined(SHADER_API_GLES) || defined(SHADER_API_GLES3)
+	return positionCS.z / positionCS.w * 0.5 + 0.5;
+#else
+	return positionCS.z;
+#endif
+}
+
+float3 FresnelSchlick(float cosTheta, float3 F0)
+{
+	float t = 1.0 - saturate(cosTheta);
+	return F0 + (1.0 - F0) * (t * t * t * t * t);
 }
 
 #endif

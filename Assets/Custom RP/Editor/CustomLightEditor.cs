@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEditor;
 
 
@@ -10,8 +10,8 @@ public class CustomLightEditor : LightEditor
     public override void OnInspectorGUI()
     {
         if (
-            !settings.lightType.hasMultipleDifferentValues && //È·±£Ã»ÓĞÑ¡Ôñ¶àÖÖÀàµÆ¹â
-            (LightType)settings.lightType.enumValueIndex == LightType.Spot//±£Ö¤Ñ¡ÔñµÄÊÇ¾Û¹âµÆ
+            !settings.lightType.hasMultipleDifferentValues && //ç¡®ä¿æ²¡æœ‰é€‰æ‹©å¤šç§ç±»ç¯å…‰
+            (LightType)settings.lightType.enumValueIndex == LightType.Spot//ä¿è¯é€‰æ‹©çš„æ˜¯èšå…‰ç¯
             )
         {
             settings.DrawInnerAndOuterSpotAngle();

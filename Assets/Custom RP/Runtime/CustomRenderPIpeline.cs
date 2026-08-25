@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+锘縰sing System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -34,7 +34,7 @@ public partial class CustomRenderPipeline : RenderPipeline
     }
 
 
-    //旧版抽象方法,占位实现
+    //鏃х増鎶借薄鏂规硶,鍗犱綅瀹炵幇
     protected override void Render(ScriptableRenderContext context, Camera[] cameras) { }
     protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
     {

@@ -1,4 +1,4 @@
-#ifndef CUSTOM_UNITY_INPUT_INCLUDED
+﻿#ifndef CUSTOM_UNITY_INPUT_INCLUDED
 #define CUSTOM_UNITY_INPUT_INCLUDED
 
 CBUFFER_START(UnityPerDraw)
@@ -45,6 +45,10 @@ float3 _WorldSpaceCameraPos;
 float4 _ProjectionParams;
 
 float4 _ScreenParams;
+
+float4x4 unity_CameraInvProjection;
+
+float4 _Time;
 
 // Transparent grab: HDR linear copy of opaque + skybox
 TEXTURE2D(_SceneColor);

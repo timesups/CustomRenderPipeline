@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.Rendering;
 
 
@@ -181,7 +181,7 @@ using UnityEngine.Rendering;
 
 
 
-    //############################É«µ÷Ó³Éä###################################//
+    //############################è‰²è°ƒæ˜ å°„###################################//
 
 
     void DoToneMapping(int sourceId) 

@@ -1,4 +1,4 @@
-#ifndef CUSTOM_LIT_INPUT_INCLUDED
+﻿#ifndef CUSTOM_LIT_INPUT_INCLUDED
 #define CUSTOM_LIT_INPUT_INCLUDED
 #define INPUT_PROP(name) UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, name)
 
@@ -21,6 +21,7 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Fresnel)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Occlusion)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
+	UNITY_DEFINE_INSTANCED_PROP(float, _OutlineWidth)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 float2 TransformBaseUV (float2 baseUV) {
@@ -58,7 +59,7 @@ float GetSmoothness (float2 baseUV) {
 float GetOcclusion(float2 baseUV)
 {
 	float strength = GetMask(baseUV).g;
-	return lerp(1.0,strength,_Occlusion);
+	return lerp(1.0, strength, INPUT_PROP(_Occlusion));
 }
 
 float GetFresnel(float2 baseUV)

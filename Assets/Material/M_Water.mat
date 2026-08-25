@@ -7,20 +7,20 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Lit_Cutoff
-  m_Shader: {fileID: 4800000, guid: c496d260a76daa645a2429aacb7b4618, type: 3}
+  m_Name: M_Water
+  m_Shader: {fileID: 4800000, guid: 7f3e8a2b1c4d5e6f708192a3b4c5d6e7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _CLIPPING
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _ALPHAPREMULTIPLY_ON
   - _ENABLE_NORMAL_MAP
   - _RECEIVE_SHADOWS
-  - _SHADOWS_CLIP
-  m_InvalidKeywords: []
+  - _SHADOWS_ON
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2450
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -29,8 +29,8 @@ Material:
     m_TexEnvs:
     - _BaseMap:
         m_Texture: {fileID: 2800000, guid: 3e8286532d8d7e4468f5c210be616460, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Scale: {x: 1.25, y: 1}
+        m_Offset: {x: 6.09, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -67,6 +67,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _NoiseMap:
+        m_Texture: {fileID: 2800000, guid: 8a4b6c2d1e3f4056a7b8c9d0e1f2a3b4, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _NormalMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -82,33 +86,39 @@ Material:
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
-    - _Clipping: 1
-    - _Cutoff: 0.5
+    - _Clipping: 0
+    - _Cutoff: 0
+    - _Density: 2.68
+    - _DetailHeight: 0.01
     - _DetailNormalMapScale: 1
-    - _DstBlend: 0
+    - _DstBlend: 10
     - _Enable_Normal_Map: 1
     - _Fresnel: 1
     - _GlossMapScale: 1
-    - _Glossiness: 0.5
+    - _Glossiness: 0.71
     - _GlossyReflections: 1
+    - _IOR: 1.333
     - _Metallic: 0
-    - _Mode: 0
+    - _Mode: 3
     - _NormalScale: 1
     - _Occlusion: 0.5
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _Premultiply_alpha: 0
     - _ReceiveShadows: 1
-    - _Shadows: 1
-    - _Smoothness: 0.332
+    - _Shadows: 0
+    - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 1
+    - _Speed: 1.35
+    - _SrcBlend: 5
     - _UVSec: 0
-    - _ZWrite: 1
+    - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0.51886785, g: 0.51886785, b: 0.51886785, a: 1}
-    - _Color: {r: 0.5188678, g: 0.5188678, b: 0.5188678, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0, g: 0.00002193451, b: 1, a: 1}
+    - _DetailScale: {r: 1, g: 1, b: 1, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissiveColor: {r: 0, g: 0, b: 0, a: 0}
+    - _WaterColor: {r: 0.08499997, g: 0.6375, b: 0.765, a: 1}
   m_BuildTextureStacks: []

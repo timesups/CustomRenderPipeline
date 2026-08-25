@@ -1,4 +1,4 @@
-{
+﻿{
   // Unity 项目：侧边栏与搜索只聚焦源码与配置，隐藏生成物
   "files.exclude": {
     "**/.DS_Store": true,
@@ -66,5 +66,7 @@
   "omnisharp.useModernNet": true,
   "editor.formatOnSave": false,
   "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true
+  "files.insertFinalNewline": true,
+  "files.encoding": "utf8bom",
+  "files.autoGuessEncoding": true
 }

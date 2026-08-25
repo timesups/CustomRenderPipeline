@@ -18,5 +18,10 @@ MonoBehaviour:
     bicubicUpsampling: 0
     threshold: 1
     thresholdKnee: 0
-    intensity: 0.5
+    intensity: 0
+    fadeFireFiles: 0
+    mode: 0
+    scatter: 0
+  tonemapping:
+    mode: 0
   shader: {fileID: 4800000, guid: 3a4f50c24e2845d49a6bd503e1d41613, type: 3}

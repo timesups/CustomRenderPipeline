@@ -1,4 +1,4 @@
-#ifndef CUSTOM_LIT_PASS_INCLUDED
+﻿#ifndef CUSTOM_LIT_PASS_INCLUDED
 #define CUSTOM_LIT_PASS_INCLUDED
 
 #include "../ShaderLibrary/Surface.hlsl"

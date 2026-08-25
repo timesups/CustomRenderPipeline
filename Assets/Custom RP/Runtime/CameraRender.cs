@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -11,7 +11,9 @@ public partial class CameraRender
     CullingResults cullingResults;
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
         litShaderTagId = new ShaderTagId("CustomLit"),
-        CustomDepthTagId = new ShaderTagId("CustomDepth");
+        CustomDepthTagId = new ShaderTagId("CustomDepth"),
+        OutlineStencilTagId = new ShaderTagId("OutlineStencil"),
+        OutlineTagId = new ShaderTagId("Outline");
 
     const string bufferName = "Render Camera";
     CommandBuffer buffer = new CommandBuffer()
@@ -42,7 +44,7 @@ public partial class CameraRender
 
         PrepareBuffer();
         PrepareForSceneWindow();
-        if (!Cull(shadowSettings.maxDistance)) 
+        if (!Cull(shadowSettings.maxDistance))
         {
             return;
         }
@@ -50,18 +52,20 @@ public partial class CameraRender
         ExecuteBuffer();
         lighting.Setup(context,cullingResults,shadowSettings,useLightsPerObject);
         postFXStack.Setup(context, camera, postFXSettings,allowHDR);
-
         buffer.EndSample(SampleName);
 
         context.SetupCameraProperties(camera);
 
         DrawCustomDepth(useGPUInstacing, useDynamciBatching);
         DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
+        DrawOutline(useGPUInstacing, useDynamciBatching);
+
+
         DrawUnsupportedShaders();
 
 
         DrawGizmosBeforFX();
-        if (postFXStack.IsActive) 
+        if (postFXStack.IsActive)
         {
             postFXStack.Render(frameBufferId);
         }
@@ -71,11 +75,59 @@ public partial class CameraRender
         Cleanup();
         Submit();
     }
+    //绘制描边：仅 OutlineLayer 物体先写 Stencil，再扩边
+    void DrawOutline(
+        bool useGPUInstacing, bool useDynamciBatching)
+    {
+        if (postFXStack.IsActive)
+        {
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.Load,
+                RenderBufferStoreAction.Store
+                );
+        }
+
+        buffer.BeginSample(SampleName);
+        ExecuteBuffer();
+
+        var sortingSettings = new SortingSettings(camera)
+        {
+            criteria = SortingCriteria.CommonOpaque,
+        };
+
+        var filterSettings = new FilteringSettings(
+            RenderQueueRange.all, -1, MeshRenderSettings.OutlineLayer);
+
+        var stencilDrawingSettings = new DrawingSettings(OutlineStencilTagId, sortingSettings)
+        {
+            enableInstancing = useGPUInstacing,
+            enableDynamicBatching = useDynamciBatching
+        };
+        context.DrawRenderers(
+            cullingResults,
+            ref stencilDrawingSettings,
+            ref filterSettings
+            );
+
+        var outlineDrawingSettings = new DrawingSettings(OutlineTagId, sortingSettings)
+        {
+            enableInstancing = useGPUInstacing,
+            enableDynamicBatching = useDynamciBatching
+        };
+        context.DrawRenderers(
+            cullingResults,
+            ref outlineDrawingSettings,
+            ref filterSettings
+            );
+
+        buffer.EndSample(SampleName);
+        ExecuteBuffer();
+    }
+    //绘制自定义深度
     void DrawCustomDepth(
         bool useGPUInstacing, bool useDynamciBatching)
     {
-        buffer.BeginSample("CustomDepth");
-
         buffer.GetTemporaryRT(
             CustomDepthBufferId, camera.pixelWidth, camera.pixelHeight,
             24, FilterMode.Point,
@@ -87,11 +139,13 @@ public partial class CameraRender
             RenderBufferStoreAction.Store
             );
         buffer.ClearRenderTarget(true, true, Color.clear);
+        buffer.BeginSample(SampleName);
         ExecuteBuffer();
+
 
         var sortingSettings = new SortingSettings(camera)
         {
-            criteria = SortingCriteria.CommonOpaque
+            criteria = SortingCriteria.CommonOpaque,
         };
 
         var drawingSettings = new DrawingSettings(CustomDepthTagId, sortingSettings)
@@ -100,7 +154,7 @@ public partial class CameraRender
             enableDynamicBatching = useDynamciBatching
         };
         var filterSettings = new FilteringSettings(
-            RenderQueueRange.opaque, -1, MeshRenderSettings.CustomDepthRenderingLayer);
+            RenderQueueRange.all, -1, MeshRenderSettings.CustomDepthRenderingLayer);
 
         context.DrawRenderers(
             cullingResults,
@@ -108,17 +162,10 @@ public partial class CameraRender
             ref filterSettings
             );
 
-        // 半透明也写入（对齐 GLEngine）
-        sortingSettings.criteria = SortingCriteria.CommonTransparent;
-        drawingSettings.sortingSettings = sortingSettings;
-        filterSettings.renderQueueRange = RenderQueueRange.transparent;
-        context.DrawRenderers(
-            cullingResults,
-            ref drawingSettings,
-            ref filterSettings
-            );
 
-        buffer.EndSample("CustomDepth");
+
+        buffer.SetGlobalTexture(CustomDepthBufferId, CustomDepthBufferId);
+        buffer.EndSample(SampleName);
         ExecuteBuffer();
     }
     void DrawVisibleGeometry(
@@ -148,7 +195,7 @@ public partial class CameraRender
             flags <= CameraClearFlags.Depth,
             flags <= CameraClearFlags.Color,
             flags == CameraClearFlags.Color ?
-            camera.backgroundColor.linear : Color.clear);//�����ȾĿ��
+            camera.backgroundColor.linear : Color.clear);
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
 
@@ -156,10 +203,10 @@ public partial class CameraRender
             PerObjectData.LightData | PerObjectData.LightIndices :
             PerObjectData.None;
 
-        var sortingSettings = new SortingSettings() { 
+        var sortingSettings = new SortingSettings() {
             criteria = SortingCriteria.CommonOpaque
         };
-        
+
         var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
         {
             enableInstancing = useGPUInstacing,
@@ -175,7 +222,7 @@ public partial class CameraRender
         };
         drawingSettings.SetShaderPassName(1, litShaderTagId);
         var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
-        
+
         //绘制所有不透明物体
         context.DrawRenderers(
             cullingResults,
@@ -194,6 +241,7 @@ public partial class CameraRender
                 allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default
                 );
             buffer.Blit(frameBufferId, SceneColorID);
+            buffer.SetGlobalTexture(SceneColorID, SceneColorID);
             buffer.SetRenderTarget(
                 frameBufferId,
                 RenderBufferLoadAction.Load,
@@ -213,7 +261,7 @@ public partial class CameraRender
             ref filterSettings
             );
     }
-    void Submit() 
+    void Submit()
     {
         buffer.EndSample(SampleName);
         ExecuteBuffer();
@@ -225,21 +273,21 @@ public partial class CameraRender
         context.ExecuteCommandBuffer(buffer);//ִ��buffer
         buffer.Clear();
     }
-    bool Cull(float maxShadowDistance) 
+    bool Cull(float maxShadowDistance)
     {
-        if(camera.TryGetCullingParameters(out ScriptableCullingParameters p)) 
+        if(camera.TryGetCullingParameters(out ScriptableCullingParameters p))
         {
             p.shadowDistance = Mathf.Min(maxShadowDistance, camera.farClipPlane);
-            cullingResults = context.Cull(ref p);//execute culling 
+            cullingResults = context.Cull(ref p);//execute culling
             return true;
         }
         return false;
     }
 
-    void Cleanup() 
+    void Cleanup()
     {
         lighting.Cleanup();
-        if (postFXStack.IsActive) 
+        if (postFXStack.IsActive)
         {
             buffer.ReleaseTemporaryRT(SceneColorID);
             buffer.ReleaseTemporaryRT(frameBufferId);

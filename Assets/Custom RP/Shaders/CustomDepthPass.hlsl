@@ -1,4 +1,4 @@
-#ifndef CUSTOM_CUSTOM_DEPTH_PASS_INCLUDED
+﻿#ifndef CUSTOM_CUSTOM_DEPTH_PASS_INCLUDED
 #define CUSTOM_CUSTOM_DEPTH_PASS_INCLUDED
 
 // 对齐 GLEngine CustomDepth.glsl：
@@ -41,8 +41,7 @@ float4 CustomDepthPassFragment(Varyings input) : SV_TARGET
 	UNITY_SETUP_INSTANCE_ID(input);
 
 	float3 normalWS = normalize(input.normalWS);
-	// SV_POSITION.z 对应 gl_FragCoord.z（窗口深度）
-	return float4(EncodeNormalOct(normalWS), input.positionCS.z, 0.0);
+	return float4(EncodeNormalOct(normalWS), EncodeDeviceDepth(input.positionCS), 0.0);
 }
 
 #endif
