@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
+
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Renderer))]

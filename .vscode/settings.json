@@ -63,7 +63,28 @@
     "*.cginc": "hlsl"
   },
   "dotnet.defaultSolution": "CustomRenderPipeline.sln",
+  // Unity 旧式 .NET Framework csproj。勿用 VS2026 MSBuild（FrozenSet API 不匹配会崩）。
+  // omnisharp.msbuildPath 常被忽略；以仓库根 omnisharp.json 的 MSBuildOverride 强制 VS2022。
+  // Unity 旧式 csproj：用 modern OmniSharp（.NET 9）+ 强制 VS2022 MSBuild，
+  // 避免 Framework OmniSharp 与 VS2022/2026 MSBuild 程序集冲突导致静默加载失败。
+  "dotnet.server.useOmnisharp": true,
   "omnisharp.useModernNet": true,
+  "omnisharp.sdkPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313",
+  "omnisharp.dotnetPath": "C:\\Program Files\\dotnet",
+  "omnisharp.enableMsBuildLoadProjectsOnDemand": false,
+  "omnisharp.projectLoadTimeout": 120,
+  "omnisharp.loggingLevel": "information",
+  "omnisharp.enableEditorConfigSupport": true,
+  "omnisharp.enableDecompilationSupport": true,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.wordBasedSuggestions": "off",
+  "razor.languageServer.suppressLspErrorToasts": true,
+  "dotnet.server.suppressLspErrorToasts": true,
   "editor.formatOnSave": false,
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,

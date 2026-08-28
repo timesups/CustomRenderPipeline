@@ -33,7 +33,6 @@
 			#include "UnlitPass.hlsl"
 			ENDHLSL
 		}
-
 		Pass
 		{
 			Tags
@@ -52,7 +51,55 @@
 			#include "ShadowCasterPass.hlsl"
 			ENDHLSL
 		}
+		Pass
+		{
+			Tags
+			{
+				"LightMode" = "OutlineStencil"
+			}
 
+			ColorMask 0
+			ZWrite Off
+
+			Stencil
+			{
+				Ref 1
+				Comp Always
+				Pass Replace
+			}
+
+			HLSLPROGRAM
+			#pragma target 3.5
+			#pragma multi_compile_instancing
+			#pragma vertex OutlineStencilPassVertex
+			#pragma fragment OutlineStencilPassFragment
+			#include "OutlineStencilPass.hlsl"
+			ENDHLSL
+		}
+		Pass
+		{
+			Tags
+			{
+				"LightMode" = "Outline"
+			}
+
+			Stencil
+			{
+				Ref 1
+				Comp NotEqual
+				Pass Keep
+			}
+			Cull Back
+			ZWrite Off
+
+			HLSLPROGRAM
+			#pragma target 3.5
+			#pragma multi_compile_instancing
+			#pragma vertex OutlinePassVertex
+			#pragma fragment OutlinePassFragment
+			#include "OutlinePass.hlsl"
+			ENDHLSL
+		}
 		Pass
 		{
 			Tags

@@ -19,6 +19,8 @@ float3 GetLighting(Surface surfaceWS, BRDF brdf,GI gi)
 	shadowData.shadowMask = gi.shadowMask;
 
 	float3 color = IndirectBRDF(surfaceWS,brdf,gi.diffuse,gi.specular);
+
+	//计算直射光
 	for (int i = 0; i < GetDirectionalLightCount(); i++)
 	{
 		Light light = GetDirectionalLight(i, surfaceWS, shadowData);
