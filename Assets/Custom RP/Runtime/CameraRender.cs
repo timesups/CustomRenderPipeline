@@ -23,8 +23,11 @@ public partial class CameraRender
     PostFXStack postFXStack = new PostFXStack();
 
     static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
+    static int cameraOpaqueTextureId = Shader.PropertyToID("_CameraOpaqueTexture");
 
     bool allowHDR;
+    bool opaqueTexture;
+    bool useIntermediateBuffer;
 
 
     public void Render(
@@ -33,11 +36,12 @@ public partial class CameraRender
         ShadowSettings shadowSettings,
         bool useLightsPerObject,
         PostFXSettings postFXSettings,bool allowHDR,
-        int colorLUTRes)
+        int colorLUTRes, bool opaqueTexture)
     {
         this.context = context;
         this.camera = camera;
         this.allowHDR = allowHDR;
+        this.opaqueTexture = opaqueTexture;
 
 
         PrepareBuffer();
@@ -50,6 +54,7 @@ public partial class CameraRender
         ExecuteBuffer();
         lighting.Setup(context,cullingResults,shadowSettings,useLightsPerObject);
         postFXStack.Setup(context, camera, postFXSettings,allowHDR,colorLUTRes);
+        useIntermediateBuffer = postFXStack.IsActive;
 
         buffer.EndSample(SampleName);
         Setup();
@@ -104,6 +109,8 @@ public partial class CameraRender
         //绘制天空盒
         context.DrawSkybox(camera);
 
+        CopyOpaqueColor();
+
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
         filterSettings.renderQueueRange = RenderQueueRange.transparent;
@@ -115,13 +122,54 @@ public partial class CameraRender
             ref filterSettings
             );
     }
+
+    void CopyOpaqueColor()
+    {
+        if (!opaqueTexture)
+        {
+            buffer.DisableShaderKeyword("_CAMERA_OPAQUE_TEXTURE");
+            ExecuteBuffer();
+            return;
+        }
+
+        buffer.BeginSample("Copy Opaque Color");
+        buffer.GetTemporaryRT(
+            cameraOpaqueTextureId,
+            camera.pixelWidth, camera.pixelHeight, 0,
+            FilterMode.Bilinear,
+            allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default
+        );
+
+        if (useIntermediateBuffer)
+        {
+            buffer.Blit(frameBufferId, cameraOpaqueTextureId);
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
+            );
+        }
+        else
+        {
+            buffer.Blit(BuiltinRenderTextureType.CameraTarget, cameraOpaqueTextureId);
+            buffer.SetRenderTarget(
+                BuiltinRenderTextureType.CameraTarget,
+                RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
+            );
+        }
+
+        buffer.SetGlobalTexture(cameraOpaqueTextureId, cameraOpaqueTextureId);
+        buffer.EnableShaderKeyword("_CAMERA_OPAQUE_TEXTURE");
+        buffer.EndSample("Copy Opaque Color");
+        ExecuteBuffer();
+    }
+
     void Setup()
     {
-        context.SetupCameraProperties(camera);//�����������
+        context.SetupCameraProperties(camera);//设置相机属性
 
         CameraClearFlags flags = camera.clearFlags;
 
-        if (postFXStack.IsActive)
+        if (useIntermediateBuffer)
         {
             if (flags > CameraClearFlags.Color)
             {
@@ -145,7 +193,7 @@ public partial class CameraRender
             flags <= CameraClearFlags.Depth,
             flags<=CameraClearFlags.Color,
             flags == CameraClearFlags.Color?
-            camera.backgroundColor.linear:Color.clear);//�����ȾĿ��
+            camera.backgroundColor.linear:Color.clear);//清除渲染目标
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
     }
@@ -175,9 +223,13 @@ public partial class CameraRender
     void Cleanup()
     {
         lighting.Cleanup();
-        if (postFXStack.IsActive)
+        if (useIntermediateBuffer)
         {
             buffer.ReleaseTemporaryRT(frameBufferId);
+        }
+        if (opaqueTexture)
+        {
+            buffer.ReleaseTemporaryRT(cameraOpaqueTextureId);
         }
     }
 }

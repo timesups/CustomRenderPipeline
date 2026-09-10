@@ -8,6 +8,12 @@
 #include "../ShaderLibrary/GI.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
 
+#if defined(_CAMERA_OPAQUE_TEXTURE)
+	TEXTURE2D(_CameraOpaqueTexture);
+	SAMPLER(sampler_CameraOpaqueTexture);
+	float4 _CameraOpaqueTexture_TexelSize;
+#endif
+
 
 
 struct Attributes
@@ -95,7 +101,30 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 	float3 color = GetLighting(surface, brdf,gi);
 
 	color += GetEmission(input.baseUV);
-	return float4(color, surface.alpha);
+
+	#if defined(_REFRACTION) && defined(_CAMERA_OPAQUE_TEXTURE)
+		float2 screenUV = input.positionCS.xy * _CameraOpaqueTexture_TexelSize.xy;
+		float ior = max(GetIOR(), 1.0001);
+		float3 refractedDir = refract(-surface.viewDirection, surface.normal, 1.0 / ior);
+		// 全反射时 refract 返回 0，退回无扰动 UV
+		if (dot(refractedDir, refractedDir) > 0.0001) {
+			float distance = GetRefractionDistance();
+			float4 currentCS = TransformWorldToHClip(surface.position);
+			float4 refractedCS = TransformWorldToHClip(
+				surface.position + refractedDir * distance
+			);
+			float2 currentUV = currentCS.xy / max(currentCS.w, 1e-5);
+			float2 refractedUV = refractedCS.xy / max(refractedCS.w, 1e-5);
+			screenUV += (refractedUV - currentUV) * 0.5;
+		}
+		float3 background = SAMPLE_TEXTURE2D(
+			_CameraOpaqueTexture, sampler_CameraOpaqueTexture, screenUV
+		).rgb;
+		color = lerp(background, color, surface.alpha);
+		return float4(color, 1.0);
+	#else
+		return float4(color, surface.alpha);
+	#endif
 }
 
 #endif

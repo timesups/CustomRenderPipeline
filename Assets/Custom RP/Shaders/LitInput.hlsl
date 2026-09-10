@@ -21,7 +21,13 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Fresnel)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Occlusion)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Opacity)
+	UNITY_DEFINE_INSTANCED_PROP(float, _IOR)
+	UNITY_DEFINE_INSTANCED_PROP(float, _RefractionDistance)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
+
+
 
 float2 TransformBaseUV (float2 baseUV) {
 	float4 baseST = INPUT_PROP( _BaseMap_ST);
@@ -31,6 +37,7 @@ float2 TransformBaseUV (float2 baseUV) {
 float4 GetBase (float2 baseUV) {
 	float4 map = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, baseUV);
 	float4 color = INPUT_PROP(_BaseColor);
+	color.a *= INPUT_PROP(_Opacity);
 	return map * color;
 }
 
@@ -65,6 +72,16 @@ float GetOcclusion(float2 baseUV)
 float GetFresnel(float2 baseUV)
 {
 	return INPUT_PROP(_Fresnel);
+}
+
+float GetIOR()
+{
+	return INPUT_PROP(_IOR);
+}
+
+float GetRefractionDistance()
+{
+	return INPUT_PROP(_RefractionDistance);
 }
 
 

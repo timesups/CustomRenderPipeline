@@ -17,6 +17,7 @@ MonoBehaviour:
   useLightsPerObject: 1
   useDynamicBatching: 0
   allowHDR: 1
+  opaqueTexture: 1
   postFXSettings: {fileID: 11400000, guid: 35c9b08df70c1d04aa40c2a9556017c4, type: 2}
   shadows:
     other:
@@ -33,3 +34,4 @@ MonoBehaviour:
       cascadeRatio3: 0.497
       cascadeFade: 1
       cascadeBlend: 1
+  colorLUTResolution: 32

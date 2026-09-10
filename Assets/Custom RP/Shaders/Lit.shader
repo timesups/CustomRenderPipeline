@@ -4,7 +4,10 @@ Shader "Custom RP/Lit"
 	{
 		_BaseMap("Texture", 2D) = "white" {}
 		_BaseColor("Color", Color) = (0.5, 0.5, 0.5, 1.0)
-		
+
+		_Opacity("Opacity",Range(0,1)) = 1.0
+
+
 		[NoScaleOffset]_EmissiveMap("Emissive Map",2D) = "black"{}
 		[HDR]_EmissiveColor("Emissive Color",Color) = (0.0,0.0,0.0,0.0)
 
@@ -31,6 +34,9 @@ Shader "Custom RP/Lit"
 
 
 		[Toggle(_PREMULTIPLY_ALPHA)] _Premultiply_alpha("Premultiply Alpha", Float) = 0
+		[Toggle(_REFRACTION)] _Refraction("Refraction", Float) = 0
+		_IOR("IOR", Range(1, 3)) = 1.5
+		_RefractionDistance("Refraction Distance", Range(0.01, 5)) = 1.0
 
 		[Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend("Src Blend", Float) = 1
 		[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", Float) = 0
@@ -62,6 +68,8 @@ Shader "Custom RP/Lit"
 			#pragma shader_feature _CLIPPING
 			#pragma shader_feature _RECEIVE_SHADOWS
 			#pragma shader_feature _PREMULTIPLY_ALPHA
+			#pragma shader_feature _REFRACTION
+			#pragma multi_compile _ _CAMERA_OPAQUE_TEXTURE
 			#pragma multi_compile _ _DIRECTIONAL_PCF3 _DIRECTIONAL_PCF5 _DIRECTIONAL_PCF7
 			#pragma multi_compile _ _OTHER_PCF3 _OTHER_PCF5 _OTHER_PCF7
 			#pragma multi_compile _ _ENABLE_NORMAL_MAP

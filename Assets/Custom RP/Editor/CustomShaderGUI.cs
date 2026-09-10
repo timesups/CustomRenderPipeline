@@ -51,32 +51,32 @@ public class CustomShaderGUI : ShaderGUI
 			}
 		}
 	}
-	void CopyLightMappingProperties() 
-	
+	void CopyLightMappingProperties()
+
 	{
 		MaterialProperty mainTex = FindProperty("_MainTex", properties, false);
 		MaterialProperty baseMap = FindProperty("_BaseMap", properties, false);
-		if (mainTex != null && baseMap != null) 
+		if (mainTex != null && baseMap != null)
 		{
 			mainTex.textureValue = baseMap.textureValue;
 			mainTex.textureScaleAndOffset = baseMap.textureScaleAndOffset;
 		}
 		MaterialProperty color = FindProperty("_Color",properties,false);
-		MaterialProperty baseColor = 
+		MaterialProperty baseColor =
 			FindProperty("_BaseColor",properties,false);
-		if (color != null && baseColor != null) 
+		if (color != null && baseColor != null)
 		{
 			color.colorValue = baseColor.colorValue;
 		}
 	}
 
-	void BakedEmission() 
+	void BakedEmission()
 	{
         EditorGUI.BeginChangeCheck();
         editor.LightmapEmissionProperty();
-		if (EditorGUI.EndChangeCheck()) 
+		if (EditorGUI.EndChangeCheck())
 		{
-			foreach (Material m in editor.targets) 
+			foreach (Material m in editor.targets)
 			{
 				m.globalIlluminationFlags &=
 					~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
@@ -133,7 +133,7 @@ public class CustomShaderGUI : ShaderGUI
 			Clipping = false;
 			Shadows = ShadowMode.Dither;
 			PremultiplyAlpha = true;
-			SrcBlend = BlendMode.One;
+			SrcBlend = BlendMode.SrcAlpha;
 			DstBlend = BlendMode.OneMinusSrcAlpha;
 			ZWrite = false;
 			RenderQueue = RenderQueue.Transparent;

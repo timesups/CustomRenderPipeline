@@ -13,6 +13,8 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset
     [SerializeField]
     bool allowHDR = true;
     [SerializeField]
+    bool opaqueTexture = false;
+    [SerializeField]
     PostFXSettings postFXSettings = default;
 
 
@@ -29,14 +31,13 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset
 
 
 
-
-
     protected override RenderPipeline CreatePipeline()
     {
         return new CustomRenderPipeline(
             useGPUInstacing,
             useDynamicBatching,
             useSRPBatcher,
-            shadows, useLightsPerObject,postFXSettings, allowHDR,(int)colorLUTResolution);
+            shadows, useLightsPerObject,postFXSettings, allowHDR,
+            (int)colorLUTResolution, opaqueTexture);
     }
 }

@@ -13,6 +13,7 @@ public partial class CustomRenderPipeline : RenderPipeline
     PostFXSettings postFXSettings;
 
     bool allowHDR;
+    bool opaqueTexture;
 
     int colorLUTRes;
 
@@ -21,7 +22,8 @@ public partial class CustomRenderPipeline : RenderPipeline
         bool useSRPBatcher,ShadowSettings shadowSettings,
         bool useLightsPerObject,PostFXSettings postFXSettings,
         bool allowHDR,
-        int colorLUTRes)
+        int colorLUTRes,
+        bool opaqueTexture)
     {
 
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
@@ -32,6 +34,7 @@ public partial class CustomRenderPipeline : RenderPipeline
         this.postFXSettings = postFXSettings;
         this.allowHDR = allowHDR;
         this.colorLUTRes = colorLUTRes;
+        this.opaqueTexture = opaqueTexture;
         GraphicsSettings.lightsUseLinearIntensity = true;
 
         InitializeForEditor();
@@ -46,7 +49,7 @@ public partial class CustomRenderPipeline : RenderPipeline
             renderer.Render(context, cameras[i],
                 useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
-                postFXSettings,allowHDR,colorLUTRes);
+                postFXSettings,allowHDR,colorLUTRes, opaqueTexture);
         }
     }
 }
