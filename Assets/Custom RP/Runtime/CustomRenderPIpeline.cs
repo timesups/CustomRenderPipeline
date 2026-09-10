@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 
 
-public partial class CustomRenderPipeline : RenderPipeline 
+public partial class CustomRenderPipeline : RenderPipeline
 {
     CameraRender renderer = new CameraRender();
     bool useGPUInstacing, useDynamciBatching, useLightsPerObject;
@@ -14,11 +14,14 @@ public partial class CustomRenderPipeline : RenderPipeline
 
     bool allowHDR;
 
+    int colorLUTRes;
+
     public CustomRenderPipeline(
-        bool useGPUInstacing, bool useDynamciBatching, 
+        bool useGPUInstacing, bool useDynamciBatching,
         bool useSRPBatcher,ShadowSettings shadowSettings,
         bool useLightsPerObject,PostFXSettings postFXSettings,
-        bool allowHDR) 
+        bool allowHDR,
+        int colorLUTRes)
     {
 
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
@@ -28,13 +31,13 @@ public partial class CustomRenderPipeline : RenderPipeline
         this.useLightsPerObject = useLightsPerObject;
         this.postFXSettings = postFXSettings;
         this.allowHDR = allowHDR;
+        this.colorLUTRes = colorLUTRes;
         GraphicsSettings.lightsUseLinearIntensity = true;
 
         InitializeForEditor();
     }
 
 
-    //旧版抽象方法,占位实现
     protected override void Render(ScriptableRenderContext context, Camera[] cameras) { }
     protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
     {
@@ -43,7 +46,7 @@ public partial class CustomRenderPipeline : RenderPipeline
             renderer.Render(context, cameras[i],
                 useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
-                postFXSettings,allowHDR);
+                postFXSettings,allowHDR,colorLUTRes);
         }
     }
 }

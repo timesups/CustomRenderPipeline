@@ -52,13 +52,14 @@ float GetMetallic (float2 baseUV) {
 float GetSmoothness (float2 baseUV) {
 	float smoothness = INPUT_PROP(_Smoothness);
 	smoothness *= GetMask(baseUV).a;
-	return smoothness; 
+	return smoothness;
 }
 
 float GetOcclusion(float2 baseUV)
 {
 	float strength = GetMask(baseUV).g;
-	return lerp(1.0,strength,_Occlusion);
+	return strength;
+	//return lerp(1.0,strength,_Occlusion);
 }
 
 float GetFresnel(float2 baseUV)

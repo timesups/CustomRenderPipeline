@@ -37,7 +37,7 @@ public partial class CustomRenderPipeline
                         spotLight.angularFalloff = AngularFalloffType.AnalyticAndInnerAngle;
                         lightData.Init(ref spotLight);
                         break;
-                    case LightType.Area:
+                    case LightType.Rectangle:
                         var rectangleLihgt = new RectangleLight();
                         LightmapperUtils.Extract(light, ref rectangleLihgt);
                         rectangleLihgt.mode = LightMode.Baked;

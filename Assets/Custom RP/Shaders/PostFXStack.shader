@@ -1,10 +1,10 @@
 Shader "Hidden/Custom RP/Post FX Stack" {
-	
+
 	SubShader {
 		Cull Off
 		ZTest Always
 		ZWrite Off
-		
+
 		HLSLINCLUDE
 		#include "../ShaderLibrary/Common.hlsl"
 		#include "PostFXStackPasses.hlsl"
@@ -13,7 +13,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 
 		Pass {
 			Name "Bloom Horizontal"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
@@ -23,7 +23,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 
 		Pass {
 			Name "Bloom Vertical"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
@@ -33,7 +33,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 
 		Pass {
 			Name "Bloom Add"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
@@ -43,7 +43,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 
 		Pass {
 			Name "Bloom Scatter"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
@@ -63,7 +63,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 
 		Pass {
 			Name "Bloom Prefilter"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
@@ -72,46 +72,66 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 		}
 		Pass {
 			Name "Bloom Prefilter Fire flies"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
 				#pragma fragment BloomPrefilterFirefliesPassFragment
 			ENDHLSL
 		}
+
 		Pass {
-			Name "Tone Mapping ACES"
-			
+			Name "Tone Mapping None"
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
-				#pragma fragment ToneMappingACESPassFragment
+				#pragma fragment ColorGradingNonePassFragment
+			ENDHLSL
+		}
+
+		Pass {
+			Name "Tone Mapping ACES"
+
+			HLSLPROGRAM
+				#pragma target 3.5
+				#pragma vertex DefaultPassVertex
+				#pragma fragment ColorGradingACESPassFragment
 			ENDHLSL
 		}
 
 		Pass {
 			Name "Tone Mapping Neutral"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
-				#pragma fragment ToneMappingNeutralPassFragment
+				#pragma fragment ColorGradingNeutralPassFragment
 			ENDHLSL
 		}
 
 		Pass {
 			Name "Tone Mapping Reinhard"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
-				#pragma fragment ToneMappingReinhardPassFragment
+				#pragma fragment ColorGradingReinhardPassFragment
+			ENDHLSL
+		}
+
+		Pass {
+			Name "Final"
+			HLSLPROGRAM
+				#pragma target 3.5
+				#pragma vertex DefaultPassVertex
+				#pragma fragment FinalPassFragment
 			ENDHLSL
 		}
 
 		Pass {
 			Name "Copy"
-			
+
 			HLSLPROGRAM
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
