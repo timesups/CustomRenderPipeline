@@ -17,13 +17,16 @@ public partial class CustomRenderPipeline : RenderPipeline
 
     int colorLUTRes;
 
+    Material customBackDepthMaterial;
+
     public CustomRenderPipeline(
         bool useGPUInstacing, bool useDynamciBatching,
         bool useSRPBatcher,ShadowSettings shadowSettings,
         bool useLightsPerObject,PostFXSettings postFXSettings,
         bool allowHDR,
         int colorLUTRes,
-        bool opaqueTexture)
+        bool opaqueTexture,
+        Shader customBackDepthShader)
     {
 
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
@@ -37,6 +40,11 @@ public partial class CustomRenderPipeline : RenderPipeline
         this.opaqueTexture = opaqueTexture;
         GraphicsSettings.lightsUseLinearIntensity = true;
 
+        if (customBackDepthShader != null)
+        {
+            customBackDepthMaterial = CoreUtils.CreateEngineMaterial(customBackDepthShader);
+        }
+
         InitializeForEditor();
     }
 
@@ -49,7 +57,15 @@ public partial class CustomRenderPipeline : RenderPipeline
             renderer.Render(context, cameras[i],
                 useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
-                postFXSettings,allowHDR,colorLUTRes, opaqueTexture);
+                postFXSettings,allowHDR,colorLUTRes, opaqueTexture,
+                customBackDepthMaterial);
         }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        CoreUtils.Destroy(customBackDepthMaterial);
+        DisposeForEditor();
     }
 }

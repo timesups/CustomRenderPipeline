@@ -9,8 +9,8 @@ public partial class CameraRender
     Camera camera;
 
     CullingResults cullingResults;
-    static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"),
-        litShaderTagId = new ShaderTagId("CustomLit");
+    static ShaderTagId unlitShaderTagId = new("SRPDefaultUnlit"),
+        litShaderTagId = new("CustomLit");
 
     const string bufferName = "Render Camera";
     CommandBuffer buffer = new CommandBuffer()
@@ -22,12 +22,16 @@ public partial class CameraRender
 
     PostFXStack postFXStack = new PostFXStack();
 
-    static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
-    static int cameraOpaqueTextureId = Shader.PropertyToID("_CameraOpaqueTexture");
+    static readonly int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
+    static readonly int cameraOpaqueTextureId = Shader.PropertyToID("_CameraOpaqueTexture");
+    static readonly int cameraCustomBackDepthTextureId =
+        Shader.PropertyToID("_CameraCustomBackDepthTexture");
 
     bool allowHDR;
     bool opaqueTexture;
     bool useIntermediateBuffer;
+    bool hasCustomBackDepthTexture;
+    Material customBackDepthMaterial;
 
 
     public void Render(
@@ -36,12 +40,14 @@ public partial class CameraRender
         ShadowSettings shadowSettings,
         bool useLightsPerObject,
         PostFXSettings postFXSettings,bool allowHDR,
-        int colorLUTRes, bool opaqueTexture)
+        int colorLUTRes, bool opaqueTexture,
+        Material customBackDepthMaterial)
     {
         this.context = context;
         this.camera = camera;
         this.allowHDR = allowHDR;
         this.opaqueTexture = opaqueTexture;
+        this.customBackDepthMaterial = customBackDepthMaterial;
 
 
         PrepareBuffer();
@@ -73,9 +79,14 @@ public partial class CameraRender
         Cleanup();
         Submit();
     }
+
     void DrawVisibleGeometry(
         bool useGPUInstacing, bool useDynamciBatching, bool useLightsPerObject)
     {
+        //绘制自定义背面深度
+        DrawCustomBackDepth();
+
+        //绘制不透明物体
         PerObjectData lightsPerObjectFlags = useLightsPerObject ?
             PerObjectData.LightData | PerObjectData.LightIndices :
             PerObjectData.None;
@@ -100,27 +111,109 @@ public partial class CameraRender
         drawingSettings.SetShaderPassName(1, litShaderTagId);
         var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
 
-        //绘制所有不透明物体
-        context.DrawRenderers(
-            cullingResults,
-            ref drawingSettings,
-            ref filterSettings
-            );
-        //绘制天空盒
-        context.DrawSkybox(camera);
 
+        DrawRendererList(drawingSettings,filterSettings);
+
+
+        //绘制天空盒
+        RendererList skyboxList = context.CreateSkyboxRendererList(camera);
+        buffer.DrawRendererList(skyboxList);
+        ExecuteBuffer();
+
+
+
+        //将不透明物体绘制到一张单独的RT上
         CopyOpaqueColor();
 
+        //绘制半透明物体
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
         filterSettings.renderQueueRange = RenderQueueRange.transparent;
+        filterSettings.renderingLayerMask = uint.MaxValue;
 
-        //绘制所有半透明物体
-        context.DrawRenderers(
-            cullingResults,
-            ref drawingSettings,
-            ref filterSettings
+        DrawRendererList(drawingSettings,filterSettings);
+
+
+
+    }
+
+    void DrawRendererList(DrawingSettings drawingSettings,FilteringSettings filteringSettings)
+    {
+        var param = new RendererListParams(cullingResults,drawingSettings,filteringSettings);
+        RendererList opaqueList = context.CreateRendererList(ref param);
+        buffer.DrawRendererList(opaqueList);
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
+    }
+
+    /// <summary>
+    /// 使用管线 Override Material 绘制 Custom Back Depth（Cull Front）。
+    /// </summary>
+    void DrawCustomBackDepth()
+    {
+        var targets = MeshRenderSetting.CustomBackDepthRenderers;
+        if (targets.Count == 0 || customBackDepthMaterial == null)
+        {
+            return;
+        }
+
+        hasCustomBackDepthTexture = true;
+        buffer.BeginSample("Custom Back Depth");
+        buffer.GetTemporaryRT(
+            cameraCustomBackDepthTextureId,
+            camera.pixelWidth, camera.pixelHeight, 32,
+            FilterMode.Point, RenderTextureFormat.ARGB32
+        );
+        buffer.SetRenderTarget(
+            cameraCustomBackDepthTextureId,
+            RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store
+        );
+        buffer.ClearRenderTarget(true, true, Color.clear);
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            var setting = targets[i];
+            if (setting == null)
+            {
+                continue;
+            }
+            var renderer = setting.CachedRenderer;
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            int subMeshCount = renderer.sharedMaterials.Length;
+            for (int submesh = 0; submesh < subMeshCount; submesh++)
+            {
+                buffer.DrawRenderer(renderer, customBackDepthMaterial, submesh, 0);
+            }
+        }
+
+        buffer.SetGlobalTexture(
+            cameraCustomBackDepthTextureId, cameraCustomBackDepthTextureId
+        );
+        RestoreCameraTarget();
+        buffer.EndSample("Custom Back Depth");
+        ExecuteBuffer();
+    }
+
+    void RestoreCameraTarget()
+    {
+        if (useIntermediateBuffer)
+        {
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
             );
+        }
+        else
+        {
+            buffer.SetRenderTarget(
+                BuiltinRenderTextureType.CameraTarget,
+                RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
+            );
+        }
     }
 
     void CopyOpaqueColor()
@@ -230,6 +323,11 @@ public partial class CameraRender
         if (opaqueTexture)
         {
             buffer.ReleaseTemporaryRT(cameraOpaqueTextureId);
+        }
+        if (hasCustomBackDepthTexture)
+        {
+            buffer.ReleaseTemporaryRT(cameraCustomBackDepthTextureId);
+            hasCustomBackDepthTexture = false;
         }
     }
 }

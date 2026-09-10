@@ -19,6 +19,7 @@ MonoBehaviour:
   allowHDR: 1
   opaqueTexture: 1
   postFXSettings: {fileID: 11400000, guid: 35c9b08df70c1d04aa40c2a9556017c4, type: 2}
+  customBackDepthShader: {fileID: 4800000, guid: ca4fb8aff759a0545bc85aa20b8e8209, type: 3}
   shadows:
     other:
       atlasSize: 1024

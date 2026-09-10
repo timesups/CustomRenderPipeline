@@ -17,6 +17,9 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset
     [SerializeField]
     PostFXSettings postFXSettings = default;
 
+    [SerializeField]
+    Shader customBackDepthShader = default;
+
 
 
     [SerializeField]
@@ -38,6 +41,6 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset
             useDynamicBatching,
             useSRPBatcher,
             shadows, useLightsPerObject,postFXSettings, allowHDR,
-            (int)colorLUTResolution, opaqueTexture);
+            (int)colorLUTResolution, opaqueTexture, customBackDepthShader);
     }
 }
