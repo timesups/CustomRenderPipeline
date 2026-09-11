@@ -26,6 +26,10 @@ public partial class CameraRender
     static readonly int cameraOpaqueTextureId = Shader.PropertyToID("_CameraOpaqueTexture");
     static readonly int cameraCustomBackDepthTextureId =
         Shader.PropertyToID("_CameraCustomBackDepthTexture");
+    static readonly int matrixInvPId = Shader.PropertyToID("unity_MatrixInvP");
+    static readonly int matrixInvVPId = Shader.PropertyToID("unity_MatrixInvVP");
+    static readonly int customBackDepthUVFlipId =
+        Shader.PropertyToID("_CustomBackDepthUVFlip");
 
     bool allowHDR;
     bool opaqueTexture;
@@ -147,7 +151,8 @@ public partial class CameraRender
     }
 
     /// <summary>
-    /// 使用管线 Override Material 绘制 Custom Back Depth（Cull Front）。
+    /// Override Material 绘制 Custom Back Depth（Cull Front）。
+    /// 写入临时 RT 时可用独立投影；结束后必须 SetupCameraProperties 恢复，且不得再改前向 VP。
     /// </summary>
     void DrawCustomBackDepth()
     {
@@ -162,13 +167,21 @@ public partial class CameraRender
         buffer.GetTemporaryRT(
             cameraCustomBackDepthTextureId,
             camera.pixelWidth, camera.pixelHeight, 32,
-            FilterMode.Point, RenderTextureFormat.ARGB32
+            FilterMode.Point, RenderTextureFormat.ARGBFloat
         );
         buffer.SetRenderTarget(
             cameraCustomBackDepthTextureId,
             RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store
         );
         buffer.ClearRenderTarget(true, true, Color.clear);
+
+        Matrix4x4 view = camera.worldToCameraMatrix;
+        Matrix4x4 projIntoRT = GL.GetGPUProjectionMatrix(camera.projectionMatrix, true);
+        buffer.SetViewProjectionMatrices(view, projIntoRT);
+        buffer.SetGlobalMatrix(matrixInvPId, projIntoRT.inverse);
+        buffer.SetGlobalMatrix(matrixInvVPId, (projIntoRT * view).inverse);
+        // Y 翻转会反转缠绕，InvertCulling 使 Cull Front 仍表示剔世界空间正面
+        buffer.SetInvertCulling(true);
 
         for (int i = 0; i < targets.Count; i++)
         {
@@ -190,16 +203,17 @@ public partial class CameraRender
             }
         }
 
+        buffer.SetInvertCulling(false);
         buffer.SetGlobalTexture(
             cameraCustomBackDepthTextureId, cameraCustomBackDepthTextureId
         );
-        RestoreCameraTarget();
+        // BackDepth 为 RT 投影；前向用 SetupCameraProperties，采样时翻 Y 对齐
+        buffer.SetGlobalFloat(customBackDepthUVFlipId, 1f);
         buffer.EndSample("Custom Back Depth");
         ExecuteBuffer();
-    }
 
-    void RestoreCameraTarget()
-    {
+        // 只恢复相机状态与渲染目标，不要 SetViewProjectionMatrices（会弄坏前向）
+        context.SetupCameraProperties(camera);
         if (useIntermediateBuffer)
         {
             buffer.SetRenderTarget(
@@ -207,13 +221,9 @@ public partial class CameraRender
                 RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
             );
         }
-        else
-        {
-            buffer.SetRenderTarget(
-                BuiltinRenderTextureType.CameraTarget,
-                RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
-            );
-        }
+        buffer.SetGlobalMatrix(matrixInvPId, projIntoRT.inverse);
+        buffer.SetGlobalMatrix(matrixInvVPId, (projIntoRT * view).inverse);
+        ExecuteBuffer();
     }
 
     void CopyOpaqueColor()

@@ -5,6 +5,7 @@ Shader "Hidden/Custom RP/Custom Back Depth"
 		Pass
 		{
 			Name "CustomBackDepth"
+			// 配合 CommandBuffer.SetInvertCulling：RT 投影 Y 翻转后仍表示剔正面、只画背面
 			Cull Front
 			ZWrite On
 			ZTest LEqual

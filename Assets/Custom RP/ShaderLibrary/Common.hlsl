@@ -9,12 +9,11 @@
 #define UNITY_MATRIX_V unity_MatrixV
 #define UNITY_MATRIX_I_V unity_MatrixInvV
 #define UNITY_MATRIX_VP unity_MatrixVP
+#define UNITY_MATRIX_P glstate_matrix_projection
+#define UNITY_MATRIX_I_P unity_MatrixInvP
+#define UNITY_MATRIX_I_VP unity_MatrixInvVP
 #define UNITY_PREV_MATRIX_M unity_prev_MatrixM
 #define UNITY_PREV_MATRIX_I_M unity_prev_MatrixIM
-#define UNITY_MATRIX_P glstate_matrix_projection
-
-#define UNITY_MATRIX_I_P unity_MatrixInvP
-#define UNITY_MATRIX_I_V unity_MatrixInvV
 
 #if defined(_SHADOW_MASK_DISTANCE)
 	#define SHADOWS_SHADOWMASK
@@ -41,6 +40,15 @@ float Square(float v)
 float DistanceSquared(float3 pA, float3 pB)
 {
 	return dot(pA - pB, pA - pB);
+}
+
+// 等价于 Built-in UnityCG.cginc 的 ComputeScreenPos（透视校正屏幕坐标）
+float4 ComputeScreenPos(float4 positionCS)
+{
+	float4 o = positionCS * 0.5;
+	o.xy = float2(o.x, o.y * _ProjectionParams.x) + o.w;
+	o.zw = positionCS.zw;
+	return o;
 }
 
 void ClipLOD(float2 positionCS,float fade)
@@ -86,12 +94,10 @@ float3 DecodeNormalOct(float2 enc)
 
 
 
-vec3 ReconstructPositionWS(vec2 uv, float depth)
+// deviceDepth：SV_POSITION.z / 深度图中的设备深度（D3D 多为 [0,1]，含 Reversed Z）
+float3 ReconstructPositionWS(float2 uv, float deviceDepth)
 {
-    vec4 clipPos = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    vec4 viewPos = mul(UNITY_MATRIX_I_P,clipPos);
-    viewPos /= viewPos.w;
-    return mul(UNITY_MATRIX_I_V,viewPos).xyz;
+	return ComputeWorldSpacePosition(uv, deviceDepth, UNITY_MATRIX_I_VP);
 }
 
 
