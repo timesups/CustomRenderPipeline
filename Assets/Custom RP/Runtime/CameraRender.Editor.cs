@@ -35,10 +35,10 @@ partial class CameraRender
     {
         if (camera.cameraType == CameraType.SceneView)
         {
-            //�򳡾������Ӽ�����
             ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
         }
     }
+    /*绘制Gizmo*/
     partial void DrawGizmosBeforFX()
     {
         if (Handles.ShouldRenderGizmos())

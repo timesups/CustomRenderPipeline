@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
+
 
 
 public partial class CameraRender
@@ -39,6 +41,7 @@ public partial class CameraRender
 
 
     public void Render(
+        RenderGraph renderGraph,
         ScriptableRenderContext context, Camera camera,
         bool useGPUInstacing, bool useDynamciBatching,
         ShadowSettings shadowSettings,
@@ -71,8 +74,22 @@ public partial class CameraRender
         DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
         DrawUnsupportedShaders();
 
-
         DrawGizmosBeforFX();
+
+        //render graph
+        var renderGraphParameters = new RenderGraphParameters()
+        {
+            commandBuffer = CommandBufferPool.Get(),
+            currentFrameIndex = Time.frameCount,
+            executionName = "Render Camera",
+            scriptableRenderContext = context
+        };
+
+
+
+
+
+
         if (postFXStack.IsActive)
         {
             postFXStack.Render(frameBufferId);
@@ -82,6 +99,12 @@ public partial class CameraRender
 
         Cleanup();
         Submit();
+        CommandBufferPool.Release(renderGraphParameters.commandBuffer);
+
+
+
+
+
     }
 
     void DrawVisibleGeometry(
@@ -151,8 +174,8 @@ public partial class CameraRender
     }
 
     /// <summary>
-    /// Override Material 绘制 Custom Back Depth（Cull Front）。
-    /// 写入临时 RT 时可用独立投影；结束后必须 SetupCameraProperties 恢复，且不得再改前向 VP。
+    /// 绘制 Custom Back Depth。与前向使用同一套 VP（不翻转投影），
+    /// 避免采样 UV 与相机俯仰错位滑动；Cull Front 语义正确，无需 InvertCulling。
     /// </summary>
     void DrawCustomBackDepth()
     {
@@ -175,13 +198,14 @@ public partial class CameraRender
         );
         buffer.ClearRenderTarget(true, true, Color.clear);
 
+        // 不改 VP：沿用 SetupCameraProperties，与水体前向像素一一对应
         Matrix4x4 view = camera.worldToCameraMatrix;
-        Matrix4x4 projIntoRT = GL.GetGPUProjectionMatrix(camera.projectionMatrix, true);
-        buffer.SetViewProjectionMatrices(view, projIntoRT);
-        buffer.SetGlobalMatrix(matrixInvPId, projIntoRT.inverse);
-        buffer.SetGlobalMatrix(matrixInvVPId, (projIntoRT * view).inverse);
-        // Y 翻转会反转缠绕，InvertCulling 使 Cull Front 仍表示剔世界空间正面
-        buffer.SetInvertCulling(true);
+        bool renderIntoTexture = camera.targetTexture != null;
+        Matrix4x4 proj = GL.GetGPUProjectionMatrix(
+            camera.projectionMatrix, renderIntoTexture
+        );
+        buffer.SetGlobalMatrix(matrixInvPId, proj.inverse);
+        buffer.SetGlobalMatrix(matrixInvVPId, (proj * view).inverse);
 
         for (int i = 0; i < targets.Count; i++)
         {
@@ -203,16 +227,13 @@ public partial class CameraRender
             }
         }
 
-        buffer.SetInvertCulling(false);
         buffer.SetGlobalTexture(
             cameraCustomBackDepthTextureId, cameraCustomBackDepthTextureId
         );
-        // BackDepth 为 RT 投影；前向用 SetupCameraProperties，采样时翻 Y 对齐
-        buffer.SetGlobalFloat(customBackDepthUVFlipId, 1f);
+        buffer.SetGlobalFloat(customBackDepthUVFlipId, 0f);
         buffer.EndSample("Custom Back Depth");
         ExecuteBuffer();
 
-        // 只恢复相机状态与渲染目标，不要 SetViewProjectionMatrices（会弄坏前向）
         context.SetupCameraProperties(camera);
         if (useIntermediateBuffer)
         {
@@ -221,8 +242,9 @@ public partial class CameraRender
                 RenderBufferLoadAction.Load, RenderBufferStoreAction.Store
             );
         }
-        buffer.SetGlobalMatrix(matrixInvPId, projIntoRT.inverse);
-        buffer.SetGlobalMatrix(matrixInvVPId, (projIntoRT * view).inverse);
+        // 重建仍用与写入一致的 InvVP
+        buffer.SetGlobalMatrix(matrixInvPId, proj.inverse);
+        buffer.SetGlobalMatrix(matrixInvVPId, (proj * view).inverse);
         ExecuteBuffer();
     }
 

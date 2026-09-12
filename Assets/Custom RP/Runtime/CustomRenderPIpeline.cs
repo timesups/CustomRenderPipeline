@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-
+using UnityEngine.Rendering.RenderGraphModule;
 
 
 public partial class CustomRenderPipeline : RenderPipeline
@@ -18,6 +18,11 @@ public partial class CustomRenderPipeline : RenderPipeline
     int colorLUTRes;
 
     Material customBackDepthMaterial;
+
+    //渲染图表
+    readonly RenderGraph renderGraph = new("Custom SRP Render Graph");
+
+
 
     public CustomRenderPipeline(
         bool useGPUInstacing, bool useDynamciBatching,
@@ -54,16 +59,19 @@ public partial class CustomRenderPipeline : RenderPipeline
     {
         for (int i = 0; i < cameras.Count; i++)
         {
-            renderer.Render(context, cameras[i],
+            renderer.Render(
+                renderGraph,context, cameras[i],
                 useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
                 postFXSettings,allowHDR,colorLUTRes, opaqueTexture,
                 customBackDepthMaterial);
         }
+        renderGraph.EndFrame();
     }
 
     protected override void Dispose(bool disposing)
     {
+        renderGraph.Cleanup();
         base.Dispose(disposing);
         CoreUtils.Destroy(customBackDepthMaterial);
         DisposeForEditor();

@@ -76,14 +76,48 @@ Varyings WaterPassVertex(Attributes input)
 	return output;
 }
 
-float2 GetBackDepthScreenUV(float4 screenPos)
+float2 GetBackDepthScreenUV(float4 positionCS)
 {
-	float2 screenUV = screenPos.xy / screenPos.w;
-	if (_CustomBackDepthUVFlip > 0.5)
+	// 与 BackDepth / 前向同一 VP 时，用像素 UV 一一对应，勿再翻 Y
+	return positionCS.xy / _ScreenParams.xy;
+}
+
+// 用写入时的线性 Eye Depth + 与 BackDepth 一致的 UV/InvVP 重建世界坐标
+float3 ReconstructWSFromEyeDepth(float2 uvRT, float eyeDepth)
+{
+#if UNITY_REVERSED_Z
+	float farDeviceDepth = 0.0;
+#else
+	float farDeviceDepth = 1.0;
+#endif
+	// 仅取该像素视线方向（与 BackDepth 的 InvVP / UV 约定一致）
+	float3 farPosWS = ComputeWorldSpacePosition(uvRT, farDeviceDepth, UNITY_MATRIX_I_VP);
+	float3 rayWS = normalize(farPosWS - _WorldSpaceCameraPos);
+	float3 rayVS = mul((float3x3)UNITY_MATRIX_V, rayWS);
+	// eyeDepth = -viewZ，沿视线缩放到该深度
+	float3 posVS = rayVS / max(-rayVS.z, 1e-5) * eyeDepth;
+	return mul(UNITY_MATRIX_I_V, float4(posVS, 1.0)).xyz;
+}
+
+bool TrySampleBackSurface(
+	float2 uvRT,
+	out float3 backNormalWS,
+	out float3 backPositionWS
+)
+{
+	float4 raw = SAMPLE_TEXTURE2D(
+		_CameraCustomBackDepthTexture, sampler_CameraCustomBackDepthTexture, uvRT
+	);
+	// Clear 的 a=0；有效像素 a=1。eyeDepth 必须为正。
+	if (raw.a < 0.5 || raw.z < 1e-4)
 	{
-		screenUV.y = 1.0 - screenUV.y;
+		backNormalWS = 0.0;
+		backPositionWS = 0.0;
+		return false;
 	}
-	return screenUV;
+	backNormalWS = DecodeNormalOct(raw.xy);
+	backPositionWS = ReconstructWSFromEyeDepth(uvRT, raw.z);
+	return true;
 }
 
 // 与 GLSL faceforward 一致（避免 HLSL 内置在 dot==0 时行为差异）
@@ -255,6 +289,7 @@ float3 getEnvironmentThroughWater(
 	float2 screenUV,
 	float3 backOutNormal,
 	float3 backPos,
+	bool hasBackSurface,
 	out float3 transmittance,
 	out float3 insideDir
 )
@@ -269,22 +304,40 @@ float3 getEnvironmentThroughWater(
 	}
 	insideDir = normalize(insideDir);
 
-	float viewThickness = length(backPos - p);
-	float viewCos = max(0.15, abs(dot(rayDir, geoNormal)));
-	float refrCos = max(0.15, abs(dot(insideDir, geoNormal)));
-	float pathLength = viewThickness * viewCos / refrCos;
-	pathLength = clamp(pathLength, 0.0, 10.0);
+	float pathLength = 0.0;
+	if (hasBackSurface)
+	{
+		float3 toBack = backPos - p;
+		// 背面应在视线前方；否则视为无效
+		float alongRay = dot(toBack, rayDir);
+		if (alongRay > 1e-4)
+		{
+			float viewThickness = alongRay; // 沿视线投影更稳，避免 UV 微偏导致的斜向距离
+			float viewCos = max(0.15, abs(dot(rayDir, geoNormal)));
+			float refrCos = max(0.15, abs(dot(insideDir, geoNormal)));
+			pathLength = viewThickness * viewCos / refrCos;
+			pathLength = clamp(pathLength, 0.0, 10.0);
+		}
+	}
 
 	float3 waterColour = _WaterColour.rgb;
 	float d = _Density * pathLength;
 	transmittance = exp(-d * (1.0 - waterColour));
 
-	float3 exitNormal = -backOutNormal;
-	float3 exitDir = refract(insideDir, exitNormal, etaReverse);
-	if (dot(exitDir, exitDir) < 1e-6 ||
-		dot(-insideDir, exitNormal) <= 0.66125)
+	float3 exitDir;
+	if (hasBackSurface)
 	{
-		exitDir = reflect(insideDir, exitNormal);
+		float3 exitNormal = -backOutNormal;
+		exitDir = refract(insideDir, exitNormal, etaReverse);
+		if (dot(exitDir, exitDir) < 1e-6 ||
+			dot(-insideDir, exitNormal) <= 0.66125)
+		{
+			exitDir = reflect(insideDir, exitNormal);
+		}
+	}
+	else
+	{
+		exitDir = insideDir;
 	}
 
 	float3 transmitted = sampleEnv(exitDir);
@@ -294,14 +347,13 @@ float3 getEnvironmentThroughWater(
 float4 WaterPassFragment(Varyings input) : SV_Target
 {
 	UNITY_SETUP_INSTANCE_ID(input);
-	float2 screenUV = GetBackDepthScreenUV(input.screenPos);
+	float2 screenUV = GetBackDepthScreenUV(input.positionCS);
 
-	float3 customBackDepth = SAMPLE_TEXTURE2D(
-		_CameraCustomBackDepthTexture, sampler_CameraCustomBackDepthTexture, screenUV
-	).xyz;
-
-	float3 backNormalWS = DecodeNormalOct(customBackDepth.xy);
-	float3 backPositionWS = ReconstructPositionWS(screenUV, customBackDepth.z);
+	float3 backNormalWS;
+	float3 backPositionWS;
+	bool hasBackSurface = TrySampleBackSurface(
+		screenUV, backNormalWS, backPositionWS
+	);
 
 	float3 p = input.positionWS;
 	float3 rayDir = normalize(p - _WorldSpaceCameraPos);
@@ -324,7 +376,7 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 	float3 insideDir;
 	float3 throughWater = getEnvironmentThroughWater(
 		p, rayDir, n, geoNormal, screenUV,
-		backNormalWS, backPositionWS,
+		backNormalWS, backPositionWS, hasBackSurface,
 		transmittance, insideDir
 	);
 
@@ -352,7 +404,11 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 	result += lowMask * pow(max(waveHeight, 0.0), e);
 
 	float3 col = result + directSpec;
-	return float4(col, 1.0);
+
+    float alpha = saturate(Luminance(transmittance));
+    alpha = 1 - alpha;
+
+	return float4(col, alpha * 1.2);
 }
 
 #endif

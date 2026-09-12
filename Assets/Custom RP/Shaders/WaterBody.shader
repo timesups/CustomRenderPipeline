@@ -10,6 +10,13 @@ Shader "Custom RP/WaterBody"
 		_Speed("Speed", Float) = 0.01
 		_DetailHeight("Detail Height", Float) = 0.1
 		_DetailScale("Detail Scale", Vector) = (1, 1, 1, 0)
+
+
+
+
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend("Src Blend", Float) = 1
+		[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", Float) = 0
+		[Enum(Off, 0, On, 1)] _ZWrite("Z Write", Float) = 1
 	}
 	SubShader
 	{
@@ -26,8 +33,10 @@ Shader "Custom RP/WaterBody"
 				"LightMode" = "CustomLit"
 			}
 
-			ZWrite Off
-			Blend One Zero
+
+			Blend [_SrcBlend] [_DstBlend]
+			ZWrite [_ZWrite]
+            Cull back
 
 			HLSLPROGRAM
 			#pragma target 3.5
