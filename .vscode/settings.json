@@ -143,6 +143,8 @@
   "omnisharp.enableDecompilationSupport": true,
   "omnisharp.disableMSBuildDiagnosticWarning": true,
   "omnisharp.projectLoadTimeout": 120,
+  // 新增/移动 .cs 后若自动完成失效：在 Unity 点 Regenerate project files，再 Cursor 里 Restart Omnisharp
+  "omnisharp.enableEditorConfigSupport": true,
   // 本工作区启用 Cursor Tab（覆盖用户全局对 csharp/hlsl 的禁用）
   "cursor.cpp.disabledLanguages": [
     "markdown",

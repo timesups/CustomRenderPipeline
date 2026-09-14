@@ -10,7 +10,7 @@ public class Shadows
 		public float nearPlaneOffset;
 	}
 
-	struct ShadowOtherLight 
+	struct ShadowOtherLight
 	{
 		public int visibleLightIndex;
 		public float slopeScaleBias;
@@ -21,7 +21,7 @@ public class Shadows
 	ShadowOtherLight[] shadowedOtherLights =
 		new ShadowOtherLight[maxShadowedOtherLightCount];
 
-	const int maxShadowedDirectionalLightCount = 4, 
+	const int maxShadowedDirectionalLightCount = 4,
 		maxShadowedOtherLightCount = 16;
 	const int maxCascades = 4;
 
@@ -312,7 +312,7 @@ public class Shadows
 				RenderPointShadows(i, split, tileSize);
 				i += 6;
 			}
-			else 
+			else
 			{
                 RenderSpotShadows(i, split, tileSize);
 				i += 1;
@@ -328,7 +328,7 @@ public class Shadows
         ExecuteBuffer();
     }
 
-	void SetOtherTileData(int index,Vector2 offset,float scale, float bias) 
+	void SetOtherTileData(int index,Vector2 offset,float scale, float bias)
 	{
 		float border = atlasSizes.w * 0.5f;
 		Vector4 data;
@@ -344,9 +344,10 @@ public class Shadows
     {
         ShadowOtherLight light = shadowedOtherLights[index];
         var shadowSettings = new ShadowDrawingSettings(
-            cullingResults, light.visibleLightIndex,
-            BatchCullingProjectionType.Perspective
+            cullingResults, light.visibleLightIndex
         );
+		shadowSettings.useRenderingLayerMaskTest = true;
+
         cullingResults.ComputeSpotShadowMatricesAndCullingPrimitives(
             light.visibleLightIndex, out Matrix4x4 viewMatrix,
             out Matrix4x4 projectionMatrix, out ShadowSplitData splitData
@@ -387,7 +388,7 @@ public class Shadows
         float tileScale = 1f / split;
 		float fovBias = Mathf.Atan(1f + bias + filterSize) * Mathf.Rad2Deg * 2f - 90f;
 
-        for (int i = 0; i < 6; i++) 
+        for (int i = 0; i < 6; i++)
 		{
             cullingResults.ComputePointShadowMatricesAndCullingPrimitives(
 				light.visibleLightIndex, (CubemapFace)i, fovBias,
@@ -408,7 +409,7 @@ public class Shadows
             otherShadowMatrices[tileIndex] = ConvertToAtlasMatrix(
                 projectionMatrix * viewMatrix, offset, tileScale
             );
-		
+
 
 
 

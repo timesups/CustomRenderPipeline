@@ -27,7 +27,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 3e8286532d8d7e4468f5c210be616460, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -90,14 +90,18 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _IOR: 1.5
     - _Metallic: 0
     - _Mode: 0
     - _NormalScale: 1
     - _Occlusion: 0.5
     - _OcclusionStrength: 1
+    - _Opacity: 1
     - _Parallax: 0.02
     - _Premultiply_alpha: 0
     - _ReceiveShadows: 1
+    - _Refraction: 0
+    - _RefractionDistance: 1
     - _Shadows: 0
     - _Smoothness: 0.332
     - _SmoothnessTextureChannel: 0
@@ -107,7 +111,8 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.51886785, g: 0.51886785, b: 0.51886785, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.5188678, g: 0.5188678, b: 0.5188678, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissiveColor: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

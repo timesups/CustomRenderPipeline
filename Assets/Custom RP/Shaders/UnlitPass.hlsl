@@ -23,7 +23,7 @@ Varyings UnlitPassVertex(Attributes input)
     float3 positionWS = TransformObjectToWorld(input.positionOS);
     output.positionCS = TransformWorldToHClip(positionWS);
     output.baseUV =TransformBaseUV(input.baseUV);
-    
+
     return output;
 }
 
@@ -39,7 +39,7 @@ float4 UnlitPassFragment(Varyings input):SV_Target
     clip(base.a - GetCutoff(input.baseUV));
 #endif
 
-    return base;
+    return float4(base.rgb,GetFinalAlpha(base.a));
 }
 
 #endif

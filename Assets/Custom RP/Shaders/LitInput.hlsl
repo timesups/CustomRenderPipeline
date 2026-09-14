@@ -24,6 +24,7 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Opacity)
 	UNITY_DEFINE_INSTANCED_PROP(float, _IOR)
 	UNITY_DEFINE_INSTANCED_PROP(float, _RefractionDistance)
+	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 
@@ -107,6 +108,11 @@ float3 NormalTangentToWorld (float3 normalTS, float3 normalWS, float4 tangentWS)
 	float3x3 tangentToWorld =
 		CreateTangentToWorld(normalWS, tangentWS.xyz, tangentWS.w);
 	return TransformTangentToWorld(normalTS, tangentToWorld);
+}
+
+float GetFinalAlpha(float alpha)
+{
+	return INPUT_PROP(_ZWrite) ? 1.0 : alpha;
 }
 
 

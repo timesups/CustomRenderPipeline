@@ -48,7 +48,7 @@ Varyings LitPassVertex(Attributes input)
 	output.positionCS = TransformWorldToHClip(output.positionWS);
 	output.baseUV = TransformBaseUV(input.baseUV);
 	output.normalWS = TransformObjectToWorldNormal(input.normalOS);
-	output.tangentWS = 
+	output.tangentWS =
 	float4(TransformObjectToWorldDir(input.tangentOS.xyz),input.tangentOS.w);
 	return output;
 }
@@ -88,8 +88,10 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 	surface.dither = InterleavedGradientNoise(input.positionCS.xy, 0);
 	surface.fresnelStrength = GetFresnel(input.baseUV);
 	surface.occlusion = GetOcclusion(input.baseUV);
-	
-	
+	surface.renderingLayerMask = asuint(unity_RenderingLayer.x);
+
+
+
 	#if defined(_PREMULTIPLY_ALPHA)
 		BRDF brdf = GetBRDF(surface, true);
 	#else
@@ -123,7 +125,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 		color = lerp(background, color, surface.alpha);
 		return float4(color, 1.0);
 	#else
-		return float4(color, surface.alpha);
+		return float4(color,GetFinalAlpha(surface.alpha));
 	#endif
 }
 

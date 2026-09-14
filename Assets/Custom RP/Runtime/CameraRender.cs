@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -39,6 +40,7 @@ public partial class CameraRender
     bool hasCustomBackDepthTexture;
     Material customBackDepthMaterial;
 
+    static CameraSettings defaultCameraSettings = new CameraSettings();
 
     public void Render(
         RenderGraph renderGraph,
@@ -56,6 +58,9 @@ public partial class CameraRender
         this.opaqueTexture = opaqueTexture;
         this.customBackDepthMaterial = customBackDepthMaterial;
 
+        var crpCamera = camera.GetComponent<CustomRenderPipelineCamera>();
+        CameraSettings cameraSettings = crpCamera ? crpCamera.Settings : defaultCameraSettings;
+
 
         PrepareBuffer();
         PrepareForSceneWindow();
@@ -65,13 +70,26 @@ public partial class CameraRender
         }
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
-        lighting.Setup(context,cullingResults,shadowSettings,useLightsPerObject);
-        postFXStack.Setup(context, camera, postFXSettings,allowHDR,colorLUTRes);
+
+        lighting.Setup(
+            context,cullingResults,shadowSettings,
+            useLightsPerObject,
+            cameraSettings.maskLights?cameraSettings.renderingLayerMask : -1);
+
+
+        if(cameraSettings.overridePostFX)
+        {
+            postFXSettings = cameraSettings.postFXSettings;
+        }
+
+
+        postFXStack.Setup(context, camera, postFXSettings,
+        allowHDR,colorLUTRes,cameraSettings.finalBlendMode);
         useIntermediateBuffer = postFXStack.IsActive;
 
         buffer.EndSample(SampleName);
         Setup();
-        DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject);
+        DrawVisibleGeometry(useGPUInstacing, useDynamciBatching, useLightsPerObject,cameraSettings.renderingLayerMask);
         DrawUnsupportedShaders();
 
         DrawGizmosBeforFX();
@@ -84,8 +102,6 @@ public partial class CameraRender
             executionName = "Render Camera",
             scriptableRenderContext = context
         };
-
-
 
 
 
@@ -103,12 +119,10 @@ public partial class CameraRender
 
 
 
-
-
     }
 
     void DrawVisibleGeometry(
-        bool useGPUInstacing, bool useDynamciBatching, bool useLightsPerObject)
+        bool useGPUInstacing, bool useDynamciBatching, bool useLightsPerObject,int renderingLayerMask)
     {
         //绘制自定义背面深度
         DrawCustomBackDepth();
@@ -136,7 +150,7 @@ public partial class CameraRender
                             lightsPerObjectFlags,
         };
         drawingSettings.SetShaderPassName(1, litShaderTagId);
-        var filterSettings = new FilteringSettings(RenderQueueRange.opaque);
+        var filterSettings = new FilteringSettings(RenderQueueRange.opaque,renderingLayerMask:(uint) renderingLayerMask);
 
 
         DrawRendererList(drawingSettings,filterSettings);
@@ -179,6 +193,7 @@ public partial class CameraRender
     /// </summary>
     void DrawCustomBackDepth()
     {
+
         var targets = MeshRenderSetting.CustomBackDepthRenderers;
         if (targets.Count == 0 || customBackDepthMaterial == null)
         {

@@ -27,6 +27,8 @@ using static PostFXSettings;
         name = bufferName
     };
 
+    CameraSettings.FinalBlendMode finalBlendModel;
+
     public bool IsActive => settings != null;
     bool allowHDR;
     void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, Pass pass)
@@ -39,7 +41,29 @@ using static PostFXSettings;
                Matrix4x4.identity, settings.Material, (int)pass,
                MeshTopology.Triangles, 3);
     }
+	static Rect fullViewRect = new Rect(0f, 0f, 1f, 1f);
+    int finalSrcBlendId = Shader.PropertyToID("_FinalSrcBlend"),
+        finalDstBlendId = Shader.PropertyToID("_FinalDstBlend");
 
+    void DrawFinal(RenderTargetIdentifier from)
+    {
+        buffer.SetGlobalFloat(finalSrcBlendId,(float)finalBlendModel.source);
+        buffer.SetGlobalFloat(finalDstBlendId,(float)finalBlendModel.destination);
+        buffer.SetGlobalTexture(fxSourceId, from);
+
+        buffer.SetRenderTarget(
+            BuiltinRenderTextureType.CameraTarget,
+            finalBlendModel.destination == BlendMode.Zero && camera.rect == fullViewRect ?
+                RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load,
+            RenderBufferStoreAction.Store
+            );
+        buffer.SetViewport(camera.pixelRect);
+
+
+        buffer.DrawProcedural(
+               Matrix4x4.identity, settings.Material, (int)Pass.Final,
+               MeshTopology.Triangles, 3);
+    }
 
     //############################Bloom###################################//
     const int maxBloomPyramidLevels = 16;
@@ -308,7 +332,7 @@ using static PostFXSettings;
             1f / lutWidth, 1f / lutHeight, lutHeight - 1f
         ));
 
-        Draw(sourceId, BuiltinRenderTextureType.CameraTarget, Pass.Final);
+        DrawFinal(sourceId);
         buffer.ReleaseTemporaryRT(colorGradingLUTId);
     }
 
@@ -331,7 +355,7 @@ using static PostFXSettings;
     public void Setup(
     ScriptableRenderContext context,
     Camera camera, PostFXSettings settings,
-    bool allowHDR,int colorLUTRes
+    bool allowHDR,int colorLUTRes,CameraSettings.FinalBlendMode finalBlendMode
     )
     {
         this.context = context;
@@ -340,6 +364,7 @@ using static PostFXSettings;
             camera.cameraType <= CameraType.SceneView ? settings : null;
         this.allowHDR = allowHDR;
         this.colorLUTRes = colorLUTRes;
+        this.finalBlendModel = finalBlendMode;
         ApplySceneViewState();
     }
 }
