@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 
 public class Shadows
 {
@@ -25,8 +26,6 @@ public class Shadows
 		maxShadowedOtherLightCount = 16;
 	const int maxCascades = 4;
 
-	const string bufferName = "Shadows";
-
 	static string[] directionalFilterKeywords = {
 		"_DIRECTIONAL_PCF3",
 		"_DIRECTIONAL_PCF5",
@@ -50,10 +49,7 @@ public class Shadows
 	bool useShadowMask;
 
 
-	CommandBuffer buffer = new CommandBuffer
-	{
-		name = bufferName
-	};
+	CommandBuffer buffer;
 
 	ScriptableRenderContext context;
 
@@ -95,13 +91,14 @@ public class Shadows
 		dirShadowMatrices = new Matrix4x4[maxShadowedDirectionalLightCount * maxCascades],
 		otherShadowMatrices = new Matrix4x4[maxShadowedOtherLightCount];
 	public void Setup(
-		ScriptableRenderContext context,
+		RenderGraphContext context,
 		CullingResults cullingResults,
 		ShadowSettings settings
 	)
 	{
 		useShadowMask = false;
-		this.context = context;
+		buffer = context.cmd;
+		this.context = context.renderContext;
 		this.cullingResults = cullingResults;
 		this.settings = settings;
 		shadowedDirectionalLightCount = shadowedOtherLightCount = 0;
@@ -197,8 +194,6 @@ public class Shadows
 
     public void Render()
 	{
-
-        buffer.BeginSample(bufferName);
         SetKeywords(shadowMaskKeywords, useShadowMask ?
             QualitySettings.shadowmaskMode == ShadowmaskMode.Shadowmask ? 0 : 1 : -1);
         buffer.SetGlobalVector(shadowAtlasSizeId, atlasSizes);
@@ -214,7 +209,6 @@ public class Shadows
             )
         );
 
-        buffer.EndSample(bufferName);
         ExecuteBuffer();
 
 
@@ -258,7 +252,7 @@ public class Shadows
 		);
 		buffer.SetGlobalFloat(shadowPancakingId, 1);
 		buffer.ClearRenderTarget(true, false, Color.clear);
-		buffer.BeginSample(bufferName);
+		buffer.BeginSample("Directional Shadows");
 		ExecuteBuffer();
 
 		int tiles = shadowedDirectionalLightCount * settings.directional.cascadeCount;
@@ -277,7 +271,7 @@ public class Shadows
 		SetKeywords(directionalFilterKeywords, (int)settings.directional.filter - 1);
 		SetKeywords(cascadeBlendKeywords, (int)settings.directional.cascadeBlend - 1);
 
-		buffer.EndSample(bufferName);
+		buffer.EndSample("Directional Shadows");
 		ExecuteBuffer();
 	}
 
@@ -299,7 +293,7 @@ public class Shadows
         );
         buffer.ClearRenderTarget(true, false, Color.clear);
 		buffer.SetGlobalFloat(shadowPancakingId, 0);
-        buffer.BeginSample(bufferName);
+        buffer.BeginSample("Other Shadows");
         ExecuteBuffer();
 
         int tiles = shadowedOtherLightCount * settings.directional.cascadeCount;
@@ -324,7 +318,7 @@ public class Shadows
         buffer.SetGlobalMatrixArray(otherShadowMatricesId, otherShadowMatrices);
 		buffer.SetGlobalVectorArray(otherShadowTilesId, otherShadowTiles);
         SetKeywords(otherFilterKeywords, (int)settings.other.filter - 1);
-        buffer.EndSample(bufferName);
+        buffer.EndSample("Other Shadows");
         ExecuteBuffer();
     }
 

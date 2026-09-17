@@ -25,9 +25,6 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRende
     };
 
     [SerializeField]
-    bool opaqueTexture = false;
-
-    [SerializeField]
     PostFXSettings postFXSettings = default;
 
     [SerializeField]
@@ -52,7 +49,7 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRende
             useDynamicBatching,
             useSRPBatcher,
             shadows, useLightsPerObject, postFXSettings,
-            (int)colorLUTResolution, opaqueTexture,
+            (int)colorLUTResolution,
             customBackDepthShader, cameraRendererShader
         );
     }

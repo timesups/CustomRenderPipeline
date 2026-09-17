@@ -69,7 +69,6 @@ Shader "Custom RP/Lit"
 			#pragma shader_feature _RECEIVE_SHADOWS
 			#pragma shader_feature _PREMULTIPLY_ALPHA
 			#pragma shader_feature _REFRACTION
-			#pragma multi_compile _ _CAMERA_OPAQUE_TEXTURE
 			#pragma multi_compile _ _DIRECTIONAL_PCF3 _DIRECTIONAL_PCF5 _DIRECTIONAL_PCF7
 			#pragma multi_compile _ _OTHER_PCF3 _OTHER_PCF5 _OTHER_PCF7
 			#pragma multi_compile _ _ENABLE_NORMAL_MAP

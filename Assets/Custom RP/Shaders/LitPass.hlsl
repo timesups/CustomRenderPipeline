@@ -8,14 +8,6 @@
 #include "../ShaderLibrary/GI.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
 
-#if defined(_CAMERA_OPAQUE_TEXTURE)
-	TEXTURE2D(_CameraOpaqueTexture);
-	SAMPLER(sampler_CameraOpaqueTexture);
-	float4 _CameraOpaqueTexture_TexelSize;
-#endif
-
-
-
 struct Attributes
 {
 	float3 positionOS : POSITION;
@@ -104,8 +96,8 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 
 	color += GetEmission(input.baseUV);
 
-	#if defined(_REFRACTION) && defined(_CAMERA_OPAQUE_TEXTURE)
-		float2 screenUV = input.positionCS.xy * _CameraOpaqueTexture_TexelSize.xy;
+	#if defined(_REFRACTION)
+		float2 screenUV = config.fragment.screenUV;
 		float ior = max(GetIOR(), 1.0001);
 		float3 refractedDir = refract(-surface.viewDirection, surface.normal, 1.0 / ior);
 		// 全反射时 refract 返回 0，退回无扰动 UV
@@ -119,9 +111,8 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 			float2 refractedUV = refractedCS.xy / max(refractedCS.w, 1e-5);
 			screenUV += (refractedUV - currentUV) * 0.5;
 		}
-		float3 background = SAMPLE_TEXTURE2D(
-			_CameraOpaqueTexture, sampler_CameraOpaqueTexture, screenUV
-		).rgb;
+		float2 uvOffset = screenUV - config.fragment.screenUV;
+		float3 background = GetBufferColor(config.fragment, uvOffset).rgb;
 		color = lerp(background, color, surface.alpha);
 		return float4(color, 1.0);
 	#else

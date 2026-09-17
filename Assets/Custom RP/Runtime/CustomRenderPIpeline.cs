@@ -11,7 +11,6 @@ public partial class CustomRenderPipeline : RenderPipeline
     ShadowSettings shadowSettings;
     PostFXSettings postFXSettings;
     CameraBufferSettings cameraBufferSettings;
-    bool opaqueTexture;
     int colorLUTRes;
     Material customBackDepthMaterial;
 
@@ -23,7 +22,6 @@ public partial class CustomRenderPipeline : RenderPipeline
         bool useSRPBatcher, ShadowSettings shadowSettings,
         bool useLightsPerObject, PostFXSettings postFXSettings,
         int colorLUTRes,
-        bool opaqueTexture,
         Shader customBackDepthShader,
         Shader cameraRendererShader)
     {
@@ -35,7 +33,6 @@ public partial class CustomRenderPipeline : RenderPipeline
         this.useLightsPerObject = useLightsPerObject;
         this.postFXSettings = postFXSettings;
         this.colorLUTRes = colorLUTRes;
-        this.opaqueTexture = opaqueTexture;
         GraphicsSettings.lightsUseLinearIntensity = true;
 
         renderer = new CameraRender(cameraRendererShader);
@@ -59,7 +56,7 @@ public partial class CustomRenderPipeline : RenderPipeline
                 cameraBufferSettings,
                 useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
-                postFXSettings, colorLUTRes, opaqueTexture,
+                postFXSettings, colorLUTRes,
                 customBackDepthMaterial
             );
         }

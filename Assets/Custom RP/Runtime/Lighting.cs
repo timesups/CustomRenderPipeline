@@ -1,6 +1,7 @@
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 using System.Runtime.InteropServices;
 
 
@@ -32,8 +33,6 @@ public static class ReinterpreExtensions
 
 public class Lighting
 {
-	const string bufferName = "Lighting";
-
 	const int maxDirLightCount = 4, maxOtherLightCount = 64;
 
 
@@ -66,30 +65,26 @@ public class Lighting
     static string lightsPerObjectKeyword = "_LIGHTS_PER_OBJECT";
 
 
-    CommandBuffer buffer = new CommandBuffer
-	{
-		name = bufferName
-	};
+	CommandBuffer buffer;
 
 	CullingResults cullingResults;
 
 	Shadows shadows = new Shadows();
 
 	public void Setup(
-		ScriptableRenderContext context,
+		RenderGraphContext context,
 		CullingResults cullingResults,
 		ShadowSettings shadowSettings,
 		bool useLightPerObject,
 		int renderingLayerMask
 	)
 	{
+		buffer = context.cmd;
 		this.cullingResults = cullingResults;
-		buffer.BeginSample(bufferName);
 		shadows.Setup(context, cullingResults, shadowSettings);
-		SetupLights(useLightPerObject,renderingLayerMask);
+		SetupLights(useLightPerObject, renderingLayerMask);
 		shadows.Render();
-		buffer.EndSample(bufferName);
-		context.ExecuteCommandBuffer(buffer);
+		context.renderContext.ExecuteCommandBuffer(buffer);
 		buffer.Clear();
 	}
 

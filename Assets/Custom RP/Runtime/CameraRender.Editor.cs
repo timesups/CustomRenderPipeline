@@ -1,96 +1,57 @@
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
 partial class CameraRender
 {
-    partial void DrawGizmosBeforFX();
-    partial void DrawGizmosAfterFX();
-    partial void DrawUnsupportedShaders();
-    partial void PrepareForSceneWindow();
-    partial void PrepareBuffer();
+	partial void PrepareForSceneWindow();
+
 #if UNITY_EDITOR
-    static ShaderTagId[] legacyShaderTagIds = {
-        new ShaderTagId("Always"),
-        new ShaderTagId("ForwardBase"),
-        new ShaderTagId("PerpassBase"),
-        new ShaderTagId("Vertex"),
-        new ShaderTagId("VertexLMRGBM"),
-        new ShaderTagId("VertexLM")
-    };
-    static Material errorMaterial;
+	static ShaderTagId[] legacyShaderTagIds = {
+		new ShaderTagId("Always"),
+		new ShaderTagId("ForwardBase"),
+		new ShaderTagId("PerpassBase"),
+		new ShaderTagId("Vertex"),
+		new ShaderTagId("VertexLMRGBM"),
+		new ShaderTagId("VertexLM")
+	};
+	static Material errorMaterial;
 
-    string SampleName { get; set; }
-    partial void PrepareBuffer()
-    {
-        Profiler.BeginSample("Editor Only");
-        buffer.name = SampleName = camera.name;
-        Profiler.EndSample();
-    }
-    partial void PrepareForSceneWindow()
-    {
-        if (camera.cameraType == CameraType.SceneView)
-        {
-            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
-            useScaledRendering = false;
-        }
-    }
+	partial void PrepareForSceneWindow()
+	{
+		if (camera.cameraType == CameraType.SceneView)
+		{
+			ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+			useScaledRendering = false;
+		}
+	}
 
-    partial void DrawGizmosBeforFX()
-    {
-        if (Handles.ShouldRenderGizmos())
-        {
-            if (useIntermediateBuffer)
-            {
-                Draw(depthAttachmentId, BuiltinRenderTextureType.CameraTarget, true);
-                ExecuteBuffer();
-            }
-            context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
-        }
-    }
+	public void DrawUnsupportedShaders()
+	{
+		if (errorMaterial == null)
+		{
+			errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
+		}
 
-    partial void DrawGizmosAfterFX()
-    {
-        if (Handles.ShouldRenderGizmos())
-        {
-            if (postFXStack.IsActive)
-            {
-                Draw(depthAttachmentId, BuiltinRenderTextureType.CameraTarget, true);
-                ExecuteBuffer();
-            }
-            context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
-        }
-    }
+		var drawingSettings = new DrawingSettings(
+			legacyShaderTagIds[0], new SortingSettings(camera)
+		)
+		{
+			overrideMaterial = errorMaterial
+		};
 
-    partial void DrawUnsupportedShaders()
-    {
-        if (errorMaterial == null)
-        {
-            errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
-        }
+		for (int i = 1; i < legacyShaderTagIds.Length; i++)
+		{
+			drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
+		}
 
-        var drawingSettings = new DrawingSettings(
-            legacyShaderTagIds[0], new SortingSettings(camera)
-        )
-        {
-            overrideMaterial = errorMaterial
-        };
-
-        for (int i = 1; i < legacyShaderTagIds.Length; i++)
-        {
-            drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
-        }
-
-        var filteringSettings = FilteringSettings.defaultValue;
-        var param = new RendererListParams(
-            cullingResults, drawingSettings, filteringSettings
-        );
-        RendererList list = context.CreateRendererList(ref param);
-        buffer.DrawRendererList(list);
-        ExecuteBuffer();
-    }
-#else
-    string SampleName => bufferName;
+		var filteringSettings = FilteringSettings.defaultValue;
+		var param = new RendererListParams(
+			cullingResults, drawingSettings, filteringSettings
+		);
+		RendererList list = context.CreateRendererList(ref param);
+		buffer.DrawRendererList(list);
+		ExecuteBuffer();
+	}
 #endif
 }

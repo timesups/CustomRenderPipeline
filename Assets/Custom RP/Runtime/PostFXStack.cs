@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 using static PostFXSettings;
 
 
@@ -16,16 +17,9 @@ using static PostFXSettings;
         }
     }
 
-    ScriptableRenderContext context;
-
     Camera camera;
     PostFXSettings settings;
-    const string bufferName = "Post FX";
-
-    CommandBuffer buffer = new CommandBuffer
-    {
-        name = bufferName
-    };
+    CommandBuffer buffer;
 
     CameraSettings.FinalBlendMode finalBlendModel;
     Vector2Int bufferSize;
@@ -440,8 +434,9 @@ using static PostFXSettings;
     }
 
 
-    public void Render(int sourceId)
+    public void Render(RenderGraphContext context, int sourceId)
     {
+        buffer = context.cmd;
         if (DoBloom(sourceId))
         {
             DoFinal(bloomResultId);
@@ -451,12 +446,11 @@ using static PostFXSettings;
         {
             DoFinal(sourceId);
         }
-        context.ExecuteCommandBuffer(buffer);
+        context.renderContext.ExecuteCommandBuffer(buffer);
         buffer.Clear();
     }
 
     public void Setup(
-        ScriptableRenderContext context,
         Camera camera, Vector2Int bufferSize, PostFXSettings settings,
         bool keepAlpha, bool allowHDR, int colorLUTRes,
         CameraSettings.FinalBlendMode finalBlendMode,
@@ -465,7 +459,6 @@ using static PostFXSettings;
     )
     {
         this.bufferSize = bufferSize;
-        this.context = context;
         this.camera = camera;
         this.settings =
             camera.cameraType <= CameraType.SceneView ? settings : null;
