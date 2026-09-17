@@ -24,19 +24,17 @@ public class CustomShaderGUI : ShaderGUI
 		MaterialEditor materialEditor, MaterialProperty[] properties
 	)
 	{
-		EditorGUI.BeginChangeCheck();
-		base.OnGUI(materialEditor, properties);
+		// 不要用 BeginChangeCheck 包住 base.OnGUI：
+		// 打开纹理/对象选择器时 Unity 会抛 ExitGUIException，
+		// EndChangeCheck 来不及执行，会触发 Invalid GUILayout state。
 		editor = materialEditor;
 		materials = materialEditor.targets;
 		this.properties = properties;
+
+		base.OnGUI(materialEditor, properties);
 		BakedEmission();
-
-
-		if (EditorGUI.EndChangeCheck())
-		{
-			SetShadowCasterPass();
-			CopyLightMappingProperties();
-		}
+		SetShadowCasterPass();
+		CopyLightMappingProperties();
 
 		EditorGUILayout.Space();
 		showPresets = EditorGUILayout.Foldout(showPresets, "Presets", true);
@@ -72,15 +70,11 @@ public class CustomShaderGUI : ShaderGUI
 
 	void BakedEmission()
 	{
-        EditorGUI.BeginChangeCheck();
-        editor.LightmapEmissionProperty();
-		if (EditorGUI.EndChangeCheck())
+		editor.LightmapEmissionProperty();
+		foreach (Material m in editor.targets)
 		{
-			foreach (Material m in editor.targets)
-			{
-				m.globalIlluminationFlags &=
-					~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
-			}
+			m.globalIlluminationFlags &=
+				~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
 		}
 	}
 

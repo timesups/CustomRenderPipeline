@@ -1,10 +1,7 @@
-using System.IO.Compression;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
-
-
 
 partial class CameraRender
 {
@@ -36,23 +33,36 @@ partial class CameraRender
         if (camera.cameraType == CameraType.SceneView)
         {
             ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+            useScaledRendering = false;
         }
     }
-    /*绘制Gizmo*/
+
     partial void DrawGizmosBeforFX()
     {
         if (Handles.ShouldRenderGizmos())
         {
+            if (useIntermediateBuffer)
+            {
+                Draw(depthAttachmentId, BuiltinRenderTextureType.CameraTarget, true);
+                ExecuteBuffer();
+            }
             context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
         }
     }
+
     partial void DrawGizmosAfterFX()
     {
         if (Handles.ShouldRenderGizmos())
         {
+            if (postFXStack.IsActive)
+            {
+                Draw(depthAttachmentId, BuiltinRenderTextureType.CameraTarget, true);
+                ExecuteBuffer();
+            }
             context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
         }
     }
+
     partial void DrawUnsupportedShaders()
     {
         if (errorMaterial == null)
@@ -60,23 +70,25 @@ partial class CameraRender
             errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
         }
 
-
-        var drawsettings = new DrawingSettings(
-                legacyShaderTagIds[0], new SortingSettings(camera)
-            )
+        var drawingSettings = new DrawingSettings(
+            legacyShaderTagIds[0], new SortingSettings(camera)
+        )
         {
             overrideMaterial = errorMaterial
         };
 
         for (int i = 1; i < legacyShaderTagIds.Length; i++)
         {
-            drawsettings.SetShaderPassName(i, legacyShaderTagIds[i]);
+            drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
         }
 
         var filteringSettings = FilteringSettings.defaultValue;
-        context.DrawRenderers(
-                cullingResults,ref drawsettings,ref filteringSettings
-            );
+        var param = new RendererListParams(
+            cullingResults, drawingSettings, filteringSettings
+        );
+        RendererList list = context.CreateRendererList(ref param);
+        buffer.DrawRendererList(list);
+        ExecuteBuffer();
     }
 #else
     string SampleName => bufferName;

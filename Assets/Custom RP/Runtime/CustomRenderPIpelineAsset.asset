@@ -16,10 +16,18 @@ MonoBehaviour:
   useSRPBatcher: 0
   useLightsPerObject: 1
   useDynamicBatching: 0
-  allowHDR: 1
+  cameraBuffer:
+    allowHDR: 1
+    copyColor: 1
+    copyColorReflection: 0
+    copyDepth: 1
+    copyDepthReflection: 0
+    bicubicRescaling: 1
+    renderScale: 1
   opaqueTexture: 0
   postFXSettings: {fileID: 11400000, guid: 35c9b08df70c1d04aa40c2a9556017c4, type: 2}
   customBackDepthShader: {fileID: 4800000, guid: ca4fb8aff759a0545bc85aa20b8e8209, type: 3}
+  cameraRendererShader: {fileID: 4800000, guid: 1ebdae4affa90064284e436a55376b40, type: 3}
   shadows:
     other:
       atlasSize: 1024

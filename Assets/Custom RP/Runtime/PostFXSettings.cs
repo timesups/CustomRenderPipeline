@@ -18,6 +18,8 @@ public class PostFXSettings : ScriptableObject
 
         public bool bicubicUpsampling;
 
+        public bool ignoreRenderScale;
+
         [Min(0f)]
         public float threshold;
 

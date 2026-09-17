@@ -16,6 +16,7 @@ MonoBehaviour:
     maxInterations: 16
     downscaleLimit: 7
     bicubicUpsampling: 0
+    ignoreRenderScale: 0
     threshold: 1
     thresholdKnee: 0
     intensity: 0
