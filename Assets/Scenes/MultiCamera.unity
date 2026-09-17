@@ -653,6 +653,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
+    maskLights: 0
+    renderingLayerMask: -1
     overridePostFX: 0
     postFXSettings: {fileID: 0}
     finalBlendMode:
@@ -2054,6 +2056,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
+    maskLights: 0
+    renderingLayerMask: -1
     overridePostFX: 1
     postFXSettings: {fileID: 11400000, guid: c6c2c76a3c4493942b8aab685b6136c3, type: 2}
     finalBlendMode:

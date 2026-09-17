@@ -25,11 +25,34 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
+
 //兼容glsl代码
 #define vec2 float2
 #define vec3 float3
 #define vec4 float4
 #define mix lerp
+
+
+
+SAMPLER(sampler_linear_clamp);
+SAMPLER(sampler_point_clamp);
+
+
+bool IsOrthographicCamera()
+{
+    return unity_OrthoParams.w;
+}
+
+
+float OrthographicDepthBufferToLinear (float rawDepth) {
+	#if UNITY_REVERSED_Z
+		rawDepth = 1.0 - rawDepth;
+	#endif
+	return (_ProjectionParams.z - _ProjectionParams.y) * rawDepth + _ProjectionParams.y;
+}
+
+
+#include "Fragment.hlsl"
 
 
 float Square(float v)
@@ -51,10 +74,10 @@ float4 ComputeScreenPos(float4 positionCS)
 	return o;
 }
 
-void ClipLOD(float2 positionCS,float fade)
+void ClipLOD(Fragment fragment,float fade)
 {
 #if defined(LOD_FADE_CROSSFADE)
-	float dither = InterleavedGradientNoise(positionCS.xy,0);
+	float dither = InterleavedGradientNoise(fragment.positionSS,0);
 	clip(fade + (fade <0.0?dither:-dither));
 #endif
 }

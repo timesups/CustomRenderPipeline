@@ -26,7 +26,7 @@ Varyings ShadowCasterPassVertex(Attributes input)
 	output.positionCS = TransformWorldToHClip(positionWS);
 
 	if(_ShadowPancaking)
-	{	
+	{
 	#if UNITY_REVERSED_Z
 		output.positionCS.z =
 			min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
@@ -44,8 +44,11 @@ Varyings ShadowCasterPassVertex(Attributes input)
 void ShadowCasterPassFragment(Varyings input)
 {
 	UNITY_SETUP_INSTANCE_ID(input);
-	ClipLOD(input.positionCS.xy,unity_LODFade.x);
-	float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.baseUV);
+
+	InputConfig config = GetInputConfig(input.positionCS,input.baseUV);
+
+	ClipLOD(config.fragment,unity_LODFade.x);
+	float4 baseMap = GetBase(config);
 	float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
 	float4 base = baseMap * baseColor;
 	#if defined(_SHADOWS_CLIP)

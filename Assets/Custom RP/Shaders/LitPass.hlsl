@@ -56,10 +56,10 @@ Varyings LitPassVertex(Attributes input)
 float4 LitPassFragment(Varyings input) : SV_TARGET
 {
 	UNITY_SETUP_INSTANCE_ID(input);
+	InputConfig config = GetInputConfig(input.positionCS,input.baseUV);
+	ClipLOD(config.fragment,unity_LODFade.x);
 
-	ClipLOD(input.positionCS.xy,unity_LODFade.x);
-
-	float4 base = GetBase(input.baseUV);
+	float4 base = GetBase(config);
 
 	#if defined(_CLIPPING)
 		clip(base.a - GetCutoff(input.baseUV));
