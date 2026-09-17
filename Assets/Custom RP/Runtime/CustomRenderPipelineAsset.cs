@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 public partial class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipeline>
 {
     [SerializeField]
-    bool useGPUInstacing = true, useSRPBatcher = true,
-        useLightsPerObject = false, useDynamicBatching = false;
+    bool useSRPBatcher = true,
+        useLightsPerObject = false;
 
     [SerializeField]
     CameraBufferSettings cameraBuffer = new CameraBufferSettings
@@ -41,12 +41,17 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRende
     [SerializeField]
     ColorLUTResolution colorLUTResolution = ColorLUTResolution._32;
 
+    [Header("Deprecated Settings")]
+    [SerializeField, Tooltip("Dynamic batching is no longer used.")]
+    bool useDynamicBatching;
+
+    [SerializeField, Tooltip("GPU instancing is always enabled.")]
+    bool useGPUInstacing;
+
     protected override RenderPipeline CreatePipeline()
     {
         return new CustomRenderPipeline(
             cameraBuffer,
-            useGPUInstacing,
-            useDynamicBatching,
             useSRPBatcher,
             shadows, useLightsPerObject, postFXSettings,
             (int)colorLUTResolution,

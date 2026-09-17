@@ -12,10 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f54eb0dc2e76a54b9514b155eb9ddef, type: 3}
   m_Name: CustomRenderPIpelineAsset
   m_EditorClassIdentifier: 
-  useGPUInstacing: 1
   useSRPBatcher: 0
   useLightsPerObject: 1
-  useDynamicBatching: 0
   cameraBuffer:
     allowHDR: 1
     copyColor: 1
@@ -30,7 +28,7 @@ MonoBehaviour:
       fixedThreshold: 0.0833
       relativeThreshold: 0.166
       subpixelBlending: 0.75
-  postFXSettings: {fileID: 11400000, guid: 35c9b08df70c1d04aa40c2a9556017c4, type: 2}
+  postFXSettings: {fileID: 0}
   customBackDepthShader: {fileID: 4800000, guid: ca4fb8aff759a0545bc85aa20b8e8209, type: 3}
   cameraRendererShader: {fileID: 4800000, guid: 1ebdae4affa90064284e436a55376b40, type: 3}
   shadows:
@@ -49,3 +47,5 @@ MonoBehaviour:
       cascadeFade: 1
       cascadeBlend: 1
   colorLUTResolution: 32
+  useDynamicBatching: 0
+  useGPUInstacing: 1

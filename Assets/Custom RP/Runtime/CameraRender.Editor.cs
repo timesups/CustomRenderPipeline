@@ -7,15 +7,6 @@ partial class CameraRender
 	partial void PrepareForSceneWindow();
 
 #if UNITY_EDITOR
-	static ShaderTagId[] legacyShaderTagIds = {
-		new ShaderTagId("Always"),
-		new ShaderTagId("ForwardBase"),
-		new ShaderTagId("PerpassBase"),
-		new ShaderTagId("Vertex"),
-		new ShaderTagId("VertexLMRGBM"),
-		new ShaderTagId("VertexLM")
-	};
-	static Material errorMaterial;
 
 	partial void PrepareForSceneWindow()
 	{
@@ -24,34 +15,6 @@ partial class CameraRender
 			ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
 			useScaledRendering = false;
 		}
-	}
-
-	public void DrawUnsupportedShaders()
-	{
-		if (errorMaterial == null)
-		{
-			errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
-		}
-
-		var drawingSettings = new DrawingSettings(
-			legacyShaderTagIds[0], new SortingSettings(camera)
-		)
-		{
-			overrideMaterial = errorMaterial
-		};
-
-		for (int i = 1; i < legacyShaderTagIds.Length; i++)
-		{
-			drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
-		}
-
-		var filteringSettings = FilteringSettings.defaultValue;
-		var param = new RendererListParams(
-			cullingResults, drawingSettings, filteringSettings
-		);
-		RendererList list = context.CreateRendererList(ref param);
-		buffer.DrawRendererList(list);
-		ExecuteBuffer();
 	}
 #endif
 }

@@ -11,12 +11,12 @@
 CBUFFER_START(_CustomLight)
 	int _DirectionalLightCount;
 	float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];
-	float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
+	float4 _DirectionalLightDirectionsAndMasks[MAX_DIRECTIONAL_LIGHT_COUNT];
 	float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
 	int _OtherLightCount;
 	float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];
 	float4 _OtherLightPositions[MAX_OTHER_LIGHT_COUNT];
-	float4 _OtherLightDirections[MAX_OTHER_LIGHT_COUNT];
+	float4 _OtherLightDirectionsAndMasks[MAX_OTHER_LIGHT_COUNT];
 	float4 _OtherLightSpotAngles[MAX_OTHER_LIGHT_COUNT];
 	float4 _OtherLightShadowData[MAX_OTHER_LIGHT_COUNT];
 CBUFFER_END
@@ -78,8 +78,8 @@ Varyings WaterPassVertex(Attributes input)
 
 float2 GetBackDepthScreenUV(float4 positionCS)
 {
-	// 与 BackDepth / 前向同一 VP 时，用像素 UV 一一对应，勿再翻 Y
-	return positionCS.xy / _ScreenParams.xy;
+	// 与 Custom Back Depth RT（bufferSize）一致，勿用 _ScreenParams
+	return positionCS.xy * _CameraBufferSize.xy;
 }
 
 // 用写入时的线性 Eye Depth + 与 BackDepth 一致的 UV/InvVP 重建世界坐标
@@ -364,7 +364,7 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 	n = FaceForwardWater(n, rayDir, n);
 
 	float3 V = -rayDir;
-	float3 L = normalize(_DirectionalLightDirections[0].xyz);
+	float3 L = normalize(_DirectionalLightDirectionsAndMasks[0].xyz);
 	float3 lightColor = _DirectionalLightColors[0].rgb;
 	float3 F0 = float3(0.02, 0.02, 0.02);
 	float roughness = 0.1;
@@ -405,10 +405,9 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 
 	float3 col = result + directSpec;
 
-    float alpha = saturate(Luminance(transmittance));
-    alpha = 1 - alpha;
 
-	return float4(col, alpha * 1.2);
+
+	return float4(col, 1.0);
 }
 
 #endif

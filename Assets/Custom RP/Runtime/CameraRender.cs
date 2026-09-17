@@ -10,8 +10,6 @@ public partial class CameraRender
     public Camera camera;
 
     CullingResults cullingResults;
-    static ShaderTagId unlitShaderTagId = new("SRPDefaultUnlit"),
-        litShaderTagId = new("CustomLit");
 
     CommandBuffer buffer;
 
@@ -89,7 +87,6 @@ public partial class CameraRender
         RenderGraph renderGraph,
         ScriptableRenderContext context, Camera camera,
         CameraBufferSettings bufferSettings,
-        bool useGPUInstacing, bool useDynamciBatching,
         ShadowSettings shadowSettings,
         bool useLightsPerObject,
         PostFXSettings postFXSettings,
@@ -167,6 +164,7 @@ public partial class CameraRender
             commandBuffer = CommandBufferPool.Get(),
             currentFrameIndex = Time.frameCount,
             executionName = cameraSampler.name,
+            rendererListCulling = true,
             scriptableRenderContext = context
         };
         buffer = renderGraphParameters.commandBuffer;
@@ -180,12 +178,20 @@ public partial class CameraRender
         );
         SetupPass.Record(renderGraph, this);
         CustomBackDepthPass.Record(renderGraph, this);
-        VisibleGeometryPass.Record(
-            renderGraph, this,
-            useDynamciBatching, useGPUInstacing, useLightsPerObject,
-            cameraSettings.renderingLayerMask
+        GeometryPass.Record(
+            renderGraph, camera, cullingResults,
+            useLightsPerObject, cameraSettings.renderingLayerMask, true
         );
-        UnsupportedShadersPass.Record(renderGraph, this);
+        SkyboxPass.Record(renderGraph, camera);
+        if (useColorTexture || useDepthTexture)
+        {
+            CopyAttachmentsPass.Record(renderGraph, this);
+        }
+        GeometryPass.Record(
+            renderGraph, camera, cullingResults,
+            useLightsPerObject, cameraSettings.renderingLayerMask, false
+        );
+        UnsupportedShadersPass.Record(renderGraph, camera, cullingResults);
         if (postFXStack.IsActive)
         {
             PostFXPass.Record(renderGraph, postFXStack);
@@ -231,71 +237,6 @@ public partial class CameraRender
             Matrix4x4.identity, material, pass,
             MeshTopology.Triangles, 3
         );
-    }
-
-    public void DrawVisibleGeometry(
-        bool useGPUInstacing, bool useDynamciBatching,
-        bool useLightsPerObject, int renderingLayerMask
-    )
-    {
-        ExecuteBuffer();
-
-        PerObjectData lightsPerObjectFlags = useLightsPerObject
-            ? PerObjectData.LightData | PerObjectData.LightIndices
-            : PerObjectData.None;
-
-        var sortingSettings = new SortingSettings(camera)
-        {
-            criteria = SortingCriteria.CommonOpaque
-        };
-
-        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
-        {
-            enableInstancing = useGPUInstacing,
-            enableDynamicBatching = useDynamciBatching,
-            perObjectData = PerObjectData.Lightmaps |
-                            PerObjectData.LightProbe |
-                            PerObjectData.LightProbeProxyVolume |
-                            PerObjectData.ShadowMask |
-                            PerObjectData.OcclusionProbe |
-                            PerObjectData.OcclusionProbeProxyVolume |
-                            PerObjectData.ReflectionProbes |
-                            lightsPerObjectFlags,
-        };
-        drawingSettings.SetShaderPassName(1, litShaderTagId);
-        var filterSettings = new FilteringSettings(
-            RenderQueueRange.opaque, renderingLayerMask: (uint)renderingLayerMask
-        );
-
-        DrawRendererList(drawingSettings, filterSettings);
-
-        RendererList skyboxList = context.CreateSkyboxRendererList(camera);
-        buffer.DrawRendererList(skyboxList);
-        ExecuteBuffer();
-
-        if (useColorTexture || useDepthTexture)
-        {
-            CopyAttachments();
-        }
-
-        sortingSettings.criteria = SortingCriteria.CommonTransparent;
-        drawingSettings.sortingSettings = sortingSettings;
-        filterSettings.renderQueueRange = RenderQueueRange.transparent;
-        filterSettings.renderingLayerMask = uint.MaxValue;
-        DrawRendererList(drawingSettings, filterSettings);
-    }
-
-    void DrawRendererList(
-        DrawingSettings drawingSettings, FilteringSettings filteringSettings
-    )
-    {
-        var param = new RendererListParams(
-            cullingResults, drawingSettings, filteringSettings
-        );
-        RendererList list = context.CreateRendererList(ref param);
-        buffer.DrawRendererList(list);
-        context.ExecuteCommandBuffer(buffer);
-        buffer.Clear();
     }
 
     public void DrawCustomBackDepth()
@@ -456,8 +397,10 @@ public partial class CameraRender
         buffer.SetGlobalFloat(dstBlendId, 0f);
     }
 
-    void CopyAttachments()
+    public void CopyAttachments()
     {
+        ExecuteBuffer();
+
         if (useColorTexture)
         {
             buffer.GetTemporaryRT(

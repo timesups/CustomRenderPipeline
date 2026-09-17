@@ -6,7 +6,7 @@ using UnityEngine.Rendering.RenderGraphModule;
 public partial class CustomRenderPipeline : RenderPipeline
 {
     CameraRender renderer;
-    bool useGPUInstacing, useDynamciBatching, useLightsPerObject;
+    bool useLightsPerObject;
 
     ShadowSettings shadowSettings;
     PostFXSettings postFXSettings;
@@ -18,7 +18,6 @@ public partial class CustomRenderPipeline : RenderPipeline
 
     public CustomRenderPipeline(
         CameraBufferSettings cameraBufferSettings,
-        bool useGPUInstacing, bool useDynamciBatching,
         bool useSRPBatcher, ShadowSettings shadowSettings,
         bool useLightsPerObject, PostFXSettings postFXSettings,
         int colorLUTRes,
@@ -27,8 +26,6 @@ public partial class CustomRenderPipeline : RenderPipeline
     {
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
         this.cameraBufferSettings = cameraBufferSettings;
-        this.useGPUInstacing = useGPUInstacing;
-        this.useDynamciBatching = useDynamciBatching;
         this.shadowSettings = shadowSettings;
         this.useLightsPerObject = useLightsPerObject;
         this.postFXSettings = postFXSettings;
@@ -54,7 +51,6 @@ public partial class CustomRenderPipeline : RenderPipeline
             renderer.Render(
                 renderGraph, context, cameras[i],
                 cameraBufferSettings,
-                useGPUInstacing, useDynamciBatching,
                 shadowSettings, useLightsPerObject,
                 postFXSettings, colorLUTRes,
                 customBackDepthMaterial

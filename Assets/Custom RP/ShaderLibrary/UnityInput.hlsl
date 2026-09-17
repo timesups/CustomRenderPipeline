@@ -52,6 +52,8 @@ float4 unity_OrthoParams;
 
 float4 _ScreenParams;
 
+float4 _CameraBufferSize;
+
 float4 _ZBufferParams;
 
 float4 _Time;
