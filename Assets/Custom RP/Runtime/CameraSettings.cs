@@ -34,6 +34,9 @@ public class CameraSettings
 	public bool copyColor = true;
 	public bool copyDepth = true;
 
+	public bool allowFXAA = false;
+	public bool keepAlpha = false;
+
 	public FinalBlendMode finalBlendMode = new()
 	{
 		source = BlendMode.One,

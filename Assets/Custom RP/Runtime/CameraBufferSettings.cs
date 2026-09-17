@@ -16,4 +16,25 @@ public struct CameraBufferSettings
 
 	[Range(CameraRender.renderScaleMin, CameraRender.renderScaleMax)]
 	public float renderScale;
+
+	[Serializable]
+	public struct FXAA
+	{
+		public bool enabled;
+
+		public enum Quality { Low, Medium, High }
+
+		public Quality quality;
+
+		[Range(0.0312f, 0.0833f)]
+		public float fixedThreshold;
+
+		[Range(0.063f, 0.250f)]
+		public float relativeThreshold;
+
+		[Range(0f, 1f)]
+		public float subpixelBlending;
+	}
+
+	public FXAA fxaa;
 }

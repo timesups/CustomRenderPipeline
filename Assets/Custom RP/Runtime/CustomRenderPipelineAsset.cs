@@ -15,7 +15,13 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRende
         copyColor = true,
         copyDepth = true,
         renderScale = 1f,
-        bicubicRescaling = CameraBufferSettings.BicubicRescalingMode.UpOnly
+        bicubicRescaling = CameraBufferSettings.BicubicRescalingMode.UpOnly,
+        fxaa = new CameraBufferSettings.FXAA
+        {
+            fixedThreshold = 0.0833f,
+            relativeThreshold = 0.166f,
+            subpixelBlending = 0.75f
+        }
     };
 
     [SerializeField]

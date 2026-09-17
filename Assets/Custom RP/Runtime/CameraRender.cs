@@ -161,10 +161,12 @@ public partial class CameraRender
             postFXSettings = cameraSettings.postFXSettings;
         }
 
+        bufferSettings.fxaa.enabled &= cameraSettings.allowFXAA;
         postFXStack.Setup(
             context, camera, bufferSize, postFXSettings,
-            allowHDR, colorLUTRes, cameraSettings.finalBlendMode,
-            bufferSettings.bicubicRescaling
+            cameraSettings.keepAlpha, allowHDR, colorLUTRes,
+            cameraSettings.finalBlendMode,
+            bufferSettings.bicubicRescaling, bufferSettings.fxaa
         );
         useIntermediateBuffer =
             useScaledRendering || useColorTexture || useDepthTexture ||
