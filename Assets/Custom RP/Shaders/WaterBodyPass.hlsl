@@ -27,6 +27,11 @@ SAMPLER(sampler_CameraCustomBackDepthTexture);
 TEXTURE2D(_NoiseRG);
 SAMPLER(sampler_NoiseRG);
 
+TEXTURE2D(_NormalMap);
+SAMPLER(sampler_NormalMap);
+float4 _NormalMap_ST;
+float _NormalScale;
+
 TEXTURECUBE(unity_SpecCube0);
 SAMPLER(samplerunity_SpecCube0);
 
@@ -49,6 +54,7 @@ struct Attributes
 	float3 positionOS : POSITION;
 	float2 baseUV : TEXCOORD0;
 	float3 normalOS : NORMAL;
+	float4 tangentOS : TANGENT;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -58,6 +64,7 @@ struct Varyings
 	float4 screenPos : VAR_SCREEN_POS;
 	float2 baseUV : VAR_BASE_UV;
 	float3 normalWS : VAR_NORMAL;
+	float4 tangentWS : VAR_TANGENT;
 	float3 positionWS : VAR_POSITION;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -71,8 +78,11 @@ Varyings WaterPassVertex(Attributes input)
 	output.positionWS = TransformObjectToWorld(input.positionOS);
 	output.positionCS = TransformWorldToHClip(output.positionWS);
 	output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+	output.tangentWS = float4(
+		TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w
+	);
 	output.screenPos = ComputeScreenPos(output.positionCS);
-	output.baseUV = input.baseUV;
+	output.baseUV = input.baseUV * _NormalMap_ST.xy + _NormalMap_ST.zw;
 	return output;
 }
 
@@ -136,11 +146,38 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
 	return F0 + (1.0 - F0) * pow(saturate(1.0 - cosTheta), 5.0);
 }
 
-float3 sampleEnv(float3 dir)
+float3 BoxProjectedCubemapDirection(
+	float3 reflectionWS, float3 positionWS,
+	float4 probePosition, float4 boxMin, float4 boxMax
+)
 {
-	float mip = PerceptualRoughnessToMipmapLevel(0.01);
+	// ProbePosition.w > 0 时探针启用盒投影
+	if (probePosition.w > 0.0)
+	{
+		float3 direction = normalize(reflectionWS);
+		float3 factors = (direction > 0.0)
+			? (boxMax.xyz - positionWS) / direction
+			: (boxMin.xyz - positionWS) / direction;
+		float t = min(min(factors.x, factors.y), factors.z);
+		reflectionWS = positionWS + direction * t - probePosition.xyz;
+	}
+	return reflectionWS;
+}
+
+float3 sampleEnv(float3 positionWS, float3 dir, float perceptualRoughness)
+{
+	dir = normalize(dir);
+#if defined(UNITY_SPECCUBE_BOX_PROJECTION)
+	dir = BoxProjectedCubemapDirection(
+		dir, positionWS,
+		unity_SpecCube0_ProbePosition,
+		unity_SpecCube0_BoxMin,
+		unity_SpecCube0_BoxMax
+	);
+#endif
+	float mip = PerceptualRoughnessToMipmapLevel(perceptualRoughness);
 	float4 environment = SAMPLE_TEXTURECUBE_LOD(
-		unity_SpecCube0, samplerunity_SpecCube0, normalize(dir), mip
+		unity_SpecCube0, samplerunity_SpecCube0, dir, mip
 	);
 	return DecodeHDREnvironment(environment, unity_SpecCube0_HDR);
 }
@@ -213,6 +250,21 @@ float3 getDetailExtrusion(float3 p, float3 normal)
 	float lowerMask = 1.0 - smoothstep(-0.5, 0.0, p.y);
 	float d = 1.0 + lowerMask;
 	return p + d * detail * normal;
+}
+
+float3 NormalTangentToWorld(float3 normalTS, float3 normalWS, float4 tangentWS)
+{
+	float3x3 tangentToWorld = CreateTangentToWorld(
+		normalWS, tangentWS.xyz, tangentWS.w
+	);
+	return TransformTangentToWorld(normalTS, tangentToWorld);
+}
+
+float3 GetMeshNormalWS(float2 uv, float3 normalWS, float4 tangentWS)
+{
+	float4 map = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uv);
+	float3 normalTS = DecodeNormal(map, _NormalScale);
+	return normalize(NormalTangentToWorld(normalTS, normalWS, tangentWS));
 }
 
 float3 getDetailNormal(float3 p, float3 normal)
@@ -291,7 +343,8 @@ float3 getEnvironmentThroughWater(
 	float3 backPos,
 	bool hasBackSurface,
 	out float3 transmittance,
-	out float3 insideDir
+	out float3 insideDir,
+	out float pathLength
 )
 {
 	float eta = 1.0 / max(_IOR, 1.0001);
@@ -304,7 +357,7 @@ float3 getEnvironmentThroughWater(
 	}
 	insideDir = normalize(insideDir);
 
-	float pathLength = 0.0;
+	pathLength = 0.0;
 	if (hasBackSurface)
 	{
 		float3 toBack = backPos - p;
@@ -340,8 +393,51 @@ float3 getEnvironmentThroughWater(
 		exitDir = insideDir;
 	}
 
-	float3 transmitted = sampleEnv(exitDir);
-	return transmitted * transmittance;
+	return sampleEnv(p, exitDir, 0.01);
+}
+
+// 厚度超过该距离后，屏幕色不再可信，改用环境
+static const float SCENE_FADE_DISTANCE = 4.0;
+
+float SampleSceneEyeDepth(float2 uv)
+{
+	float raw = SAMPLE_DEPTH_TEXTURE_LOD(
+		_CameraDepthTexture, sampler_point_clamp, uv, 0
+	);
+	return IsOrthographicCamera()
+		? OrthographicDepthBufferToLinear(raw)
+		: LinearEyeDepth(raw, _ZBufferParams);
+}
+
+float SurfaceEyeDepth(float4 positionCS)
+{
+	return IsOrthographicCamera()
+		? OrthographicDepthBufferToLinear(positionCS.z)
+		: positionCS.w;
+}
+
+float2 GetRefractedScreenUV(
+	float3 position, float3 insideDir, float2 screenUV, float distance
+)
+{
+	float4 currentCS = TransformWorldToHClip(position);
+	float4 refractedCS = TransformWorldToHClip(position + insideDir * distance);
+	float2 currentNDC = currentCS.xy / max(currentCS.w, 1e-5);
+	float2 refractedNDC = refractedCS.xy / max(refractedCS.w, 1e-5);
+	return screenUV + (refractedNDC - currentNDC) * 0.5;
+}
+
+float SceneColorWeight(float2 uv, float surfaceEyeDepth, float pathLength)
+{
+	float2 edge = min(uv, 1.0 - uv);
+	float inScreen = smoothstep(0.0, 0.02, min(edge.x, edge.y));
+
+	float sceneEye = SampleSceneEyeDepth(uv);
+	float behind = smoothstep(0.0, 0.25, sceneEye - surfaceEyeDepth);
+	float farPlane = max(_ProjectionParams.z, 1.0);
+	float notSky = 1.0 - smoothstep(farPlane * 0.9, farPlane * 0.99, sceneEye);
+	float thin = 1.0 - saturate(pathLength / SCENE_FADE_DISTANCE);
+	return inScreen * behind * notSky * thin;
 }
 
 float4 GetSceneColor(float2 uv)
@@ -350,27 +446,6 @@ float4 GetSceneColor(float2 uv)
 		_CameraColorTexture, sampler_linear_clamp, uv, 0
 	);
 }
-
-float3 GetRefractColor(float3 normal,float3 position,float3 viewDirection,float2 screenUV ,float distance,float ior = 1.0)
-{
-	float3 refractedDir = refract(-viewDirection, normal, 1.0 / ior);
-	// 全反射时 refract 返回 0，退回无扰动 UV
-	if (dot(refractedDir, refractedDir) > 0.0001) {
-		float4 currentCS = TransformWorldToHClip(position);
-		float4 refractedCS = TransformWorldToHClip(
-			position + refractedDir * distance
-		);
-		float2 currentUV = currentCS.xy / max(currentCS.w, 1e-5);
-		float2 refractedUV = refractedCS.xy / max(refractedCS.w, 1e-5);
-		screenUV += (refractedUV - currentUV) * 0.5;
-	}
-
-
-	return  GetSceneColor(screenUV).rgb;
-}
-
-
-
 
 float4 WaterPassFragment(Varyings input) : SV_Target
 {
@@ -385,7 +460,9 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 
 	float3 p = input.positionWS;
 	float3 rayDir = normalize(p - _WorldSpaceCameraPos);
-	float3 geoNormal = normalize(input.normalWS);
+	float3 geoNormal = GetMeshNormalWS(
+		input.baseUV, normalize(input.normalWS), input.tangentWS
+	);
 	geoNormal = FaceForwardWater(geoNormal, rayDir, geoNormal);
 
 	float3 n = getDetailNormal(p, geoNormal);
@@ -402,11 +479,19 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 
 	float3 transmittance;
 	float3 insideDir;
-	float3 throughWater = getEnvironmentThroughWater(
+	float pathLength;
+	float3 envColor = getEnvironmentThroughWater(
 		p, rayDir, n, geoNormal, screenUV,
 		backNormalWS, backPositionWS, hasBackSurface,
-		transmittance, insideDir
+		transmittance, insideDir, pathLength
 	);
+	float2 refractUV = GetRefractedScreenUV(p, insideDir, screenUV, 1.0);
+	float3 sceneColor = GetSceneColor(refractUV).rgb;
+	float sceneWeight = SceneColorWeight(
+		refractUV, SurfaceEyeDepth(input.positionCS), pathLength
+	);
+	float3 throughWater =
+		lerp(envColor, sceneColor, sceneWeight) * transmittance;
 
 	float lowMask = 1.0 - smoothstep(-0.5, 0.0, p.y);
 	float3 result = 0.0;
@@ -422,7 +507,7 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 	result += _Clarity * lightColor * transmittance * phase;
 
 	float3 reflectedDir = reflect(rayDir, n);
-	float3 reflectedCol = sampleEnv(reflectedDir);
+	float3 reflectedCol = sampleEnv(p, reflectedDir, roughness);
 	float3 F = fresnelSchlick(dot_c(n, V), F0);
 	result = lerp(result, reflectedCol, F);
 
@@ -432,14 +517,7 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 	result += lowMask * pow(max(waveHeight, 0.0), e);
 
 	float3 col = result + directSpec;
-
-	//float3 GetRefractColor(float3 normal,float3 position,float3 viewDirection,float2 screenUV ,float distance,float ior = 1.0)
-
-
-	float3 sceneColor = GetRefractColor(n,p,rayDir,screenUV,1.0,_IOR);
-
-
-	return float4(sceneColor.rgb, 1.0);
+	return float4(col, 1.0);
 }
 
 #endif

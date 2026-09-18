@@ -32,6 +32,10 @@ CBUFFER_START(UnityPerDraw)
 	float4 unity_ProbeVolumeSizeInv;
 	float4 unity_ProbeVolumeMin;
 	float4 unity_RenderingLayer;
+
+	float4 unity_SpecCube0_BoxMax;
+	float4 unity_SpecCube0_BoxMin;
+	float4 unity_SpecCube0_ProbePosition;
 CBUFFER_END
 
 float4x4 unity_MatrixVP;
