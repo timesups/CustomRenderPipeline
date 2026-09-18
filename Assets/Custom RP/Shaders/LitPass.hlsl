@@ -45,6 +45,9 @@ Varyings LitPassVertex(Attributes input)
 	return output;
 }
 
+
+
+
 float4 LitPassFragment(Varyings input) : SV_TARGET
 {
 	UNITY_SETUP_INSTANCE_ID(input);

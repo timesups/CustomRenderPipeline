@@ -37,4 +37,5 @@ float4 GetBufferColor(Fragment fragment, float2 uvOffset = float2(0.0, 0.0))
 	);
 }
 
+
 #endif

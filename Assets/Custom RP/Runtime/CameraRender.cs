@@ -176,7 +176,7 @@ public partial class CameraRender
             cullingResults, shadowSettings, useLightsPerObject,
             cameraSettings.maskLights ? cameraSettings.renderingLayerMask : -1
         );
-        SetupPass.Record(renderGraph, this);
+        SetupPass.Record(renderGraph,useIntermediateBuffer,allowHDR,bufferSize,camera ,this);
         CustomBackDepthPass.Record(renderGraph, this);
         GeometryPass.Record(
             renderGraph, camera, cullingResults,

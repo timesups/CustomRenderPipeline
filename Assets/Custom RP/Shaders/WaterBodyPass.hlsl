@@ -344,6 +344,34 @@ float3 getEnvironmentThroughWater(
 	return transmitted * transmittance;
 }
 
+float4 GetSceneColor(float2 uv)
+{
+	return SAMPLE_TEXTURE2D_LOD(
+		_CameraColorTexture, sampler_linear_clamp, uv, 0
+	);
+}
+
+float3 GetRefractColor(float3 normal,float3 position,float3 viewDirection,float2 screenUV ,float distance,float ior = 1.0)
+{
+	float3 refractedDir = refract(-viewDirection, normal, 1.0 / ior);
+	// 全反射时 refract 返回 0，退回无扰动 UV
+	if (dot(refractedDir, refractedDir) > 0.0001) {
+		float4 currentCS = TransformWorldToHClip(position);
+		float4 refractedCS = TransformWorldToHClip(
+			position + refractedDir * distance
+		);
+		float2 currentUV = currentCS.xy / max(currentCS.w, 1e-5);
+		float2 refractedUV = refractedCS.xy / max(refractedCS.w, 1e-5);
+		screenUV += (refractedUV - currentUV) * 0.5;
+	}
+
+
+	return  GetSceneColor(screenUV).rgb;
+}
+
+
+
+
 float4 WaterPassFragment(Varyings input) : SV_Target
 {
 	UNITY_SETUP_INSTANCE_ID(input);
@@ -405,9 +433,13 @@ float4 WaterPassFragment(Varyings input) : SV_Target
 
 	float3 col = result + directSpec;
 
+	//float3 GetRefractColor(float3 normal,float3 position,float3 viewDirection,float2 screenUV ,float distance,float ior = 1.0)
 
 
-	return float4(col, 1.0);
+	float3 sceneColor = GetRefractColor(n,p,rayDir,screenUV,1.0,_IOR);
+
+
+	return float4(sceneColor.rgb, 1.0);
 }
 
 #endif

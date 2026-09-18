@@ -17,7 +17,7 @@ MonoBehaviour:
   cameraBuffer:
     allowHDR: 1
     copyColor: 1
-    copyColorReflection: 0
+    copyColorReflection: 1
     copyDepth: 1
     copyDepthReflection: 0
     bicubicRescaling: 1

@@ -88,8 +88,8 @@ Material:
     - _Clarity: 1
     - _Clipping: 0
     - _Cutoff: 0.5
-    - _Density: 2.37
-    - _DetailHeight: 0.01
+    - _Density: 2.05
+    - _DetailHeight: 0.03
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _Enable_Normal_Map: 1
@@ -113,10 +113,10 @@ Material:
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _Speed: 0.01
+    - _Speed: 10
     - _SrcBlend: 5
     - _UVSec: 0
-    - _ZWrite: 0
+    - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
