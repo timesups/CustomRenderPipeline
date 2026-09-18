@@ -32,7 +32,9 @@ using static PostFXSettings;
 
     const string
         fxaaQualityLowKeyword = "FXAA_QUALITY_LOW",
-        fxaaQualityMediumKeyword = "FXAA_QUALITY_MEDIUM";
+        fxaaQualityMediumKeyword = "FXAA_QUALITY_MEDIUM",
+        bloomAdditiveKeyword = "BLOOM_ADDITIVE",
+        bloomScatteringKeyword = "BLOOM_SCATTERING";
 
     void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, Pass pass)
     {
@@ -204,18 +206,16 @@ using static PostFXSettings;
             width /= 2;
             height /= 2;
         }
-        Pass combinePass, finalPass;
-
+        Pass combinePass;
 
         if (bloom.mode == PostFXSettings.BloomSettings.Mode.Additive)
         {
-            combinePass = finalPass = Pass.BloomAdd;
+            combinePass = Pass.BloomAdd;
             buffer.SetGlobalFloat(bloomIntensityId, 1.0f);
         }
         else
         {
             combinePass = Pass.BloomScatter;
-            finalPass = Pass.BloomScatterFinal;
             buffer.SetGlobalFloat(bloomIntensityId, bloom.scatter);
         }
 
@@ -241,16 +241,30 @@ using static PostFXSettings;
         {
             buffer.ReleaseTemporaryRT(bloomPyramidId);
         }
-        buffer.SetGlobalFloat(bloomIntensityId, bloom.intensity);
-        buffer.SetGlobalTexture(fxSource2Id, sourceId);
 
+        // 只输出 bloom，与原图的合成挪到 Apply Color Grading
+        buffer.SetGlobalFloat(bloomIntensityId, 1f);
+        buffer.SetGlobalTexture(fxSource2Id, Texture2D.blackTexture);
         buffer.GetTemporaryRT(
             bloomResultId, bufferSize.x, bufferSize.y, 0,
             FilterMode.Bilinear, format
         );
-
-        Draw(fromId, bloomResultId, finalPass);
+        Draw(fromId, bloomResultId, Pass.BloomAdd);
         buffer.ReleaseTemporaryRT(fromId);
+
+        buffer.SetGlobalFloat(bloomIntensityId, bloom.intensity);
+        buffer.SetGlobalTexture(bloomResultId, bloomResultId);
+        if (bloom.mode == PostFXSettings.BloomSettings.Mode.Additive)
+        {
+            buffer.EnableShaderKeyword(bloomAdditiveKeyword);
+            buffer.DisableShaderKeyword(bloomScatteringKeyword);
+        }
+        else
+        {
+            buffer.EnableShaderKeyword(bloomScatteringKeyword);
+            buffer.DisableShaderKeyword(bloomAdditiveKeyword);
+        }
+
         buffer.EndSample("Bloom");
         return true;
     }
@@ -437,14 +451,18 @@ using static PostFXSettings;
     public void Render(RenderGraphContext context, int sourceId)
     {
         buffer = context.cmd;
-        if (DoBloom(sourceId))
+        bool bloomed = DoBloom(sourceId);
+        if (!bloomed)
         {
-            DoFinal(bloomResultId);
-            buffer.ReleaseTemporaryRT(bloomResultId);
+            buffer.DisableShaderKeyword(bloomAdditiveKeyword);
+            buffer.DisableShaderKeyword(bloomScatteringKeyword);
         }
-        else
+        DoFinal(sourceId);
+        if (bloomed)
         {
-            DoFinal(sourceId);
+            buffer.ReleaseTemporaryRT(bloomResultId);
+            buffer.DisableShaderKeyword(bloomAdditiveKeyword);
+            buffer.DisableShaderKeyword(bloomScatteringKeyword);
         }
         context.renderContext.ExecuteCommandBuffer(buffer);
         buffer.Clear();

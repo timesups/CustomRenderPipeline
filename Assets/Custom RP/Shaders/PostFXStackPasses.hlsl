@@ -7,6 +7,7 @@
 
 TEXTURE2D(_PostFXSource);
 TEXTURE2D(_PostFXSource2);
+TEXTURE2D(_BloomResult);
 
 
 
@@ -231,6 +232,23 @@ float3 ApplyBloomThreshold (float3 color) {
 	return color * contribution;
 }
 
+float3 CombineBloomWithSource (float3 source, float2 screenUV) {
+#if defined(BLOOM_ADDITIVE)
+	float3 bloom = SAMPLE_TEXTURE2D_LOD(
+		_BloomResult, sampler_linear_clamp, screenUV, 0
+	).rgb;
+	return source + bloom * _BloomIntensity;
+#elif defined(BLOOM_SCATTERING)
+	float3 bloom = SAMPLE_TEXTURE2D_LOD(
+		_BloomResult, sampler_linear_clamp, screenUV, 0
+	).rgb;
+	bloom += source - ApplyBloomThreshold(source);
+	return lerp(source, bloom, _BloomIntensity);
+#else
+	return source;
+#endif
+}
+
 float4 BloomPrefilterPassFragment (Varyings input) : SV_TARGET {
 	float3 color = ApplyBloomThreshold(GetSource(input.screenUV).rgb);
 	return float4(color, 1.0);
@@ -307,12 +325,14 @@ float3 ApplyColorGradingLUT (float3 color) {
 
 float4 ApplyColorGradingPassFragment(Varyings input) : SV_TARGET {
 	float4 color = GetSource(input.screenUV);
+	color.rgb = CombineBloomWithSource(color.rgb, input.screenUV);
 	color.rgb = ApplyColorGradingLUT(color.rgb);
 	return color;
 }
 
 float4 ApplyColorGradingWithLumaPassFragment (Varyings input) : SV_TARGET {
 	float4 color = GetSource(input.screenUV);
+	color.rgb = CombineBloomWithSource(color.rgb, input.screenUV);
 	color.rgb = ApplyColorGradingLUT(color.rgb);
 	color.a = sqrt(Luminance(color.rgb));
 	return color;

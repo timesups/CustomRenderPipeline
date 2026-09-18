@@ -129,6 +129,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
 				#pragma fragment ApplyColorGradingPassFragment
+				#pragma multi_compile _ BLOOM_ADDITIVE BLOOM_SCATTERING
 			ENDHLSL
 		}
 
@@ -165,6 +166,7 @@ Shader "Hidden/Custom RP/Post FX Stack" {
 				#pragma target 3.5
 				#pragma vertex DefaultPassVertex
 				#pragma fragment ApplyColorGradingWithLumaPassFragment
+				#pragma multi_compile _ BLOOM_ADDITIVE BLOOM_SCATTERING
 			ENDHLSL
 		}
 
