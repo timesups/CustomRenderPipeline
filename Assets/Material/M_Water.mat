@@ -88,7 +88,7 @@ Material:
     - _Clarity: 1
     - _Clipping: 0
     - _Cutoff: 0.5
-    - _Density: 4.9
+    - _Density: 2.37
     - _DetailHeight: 0.01
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
@@ -97,7 +97,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _IOR: 1.33
+    - _IOR: 1.333
     - _Metallic: 0
     - _Mode: 0
     - _NormalScale: 1

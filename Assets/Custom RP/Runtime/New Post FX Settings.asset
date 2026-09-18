@@ -19,8 +19,8 @@ MonoBehaviour:
     ignoreRenderScale: 0
     threshold: 1
     thresholdKnee: 0.232
-    intensity: 0.17
-    fadeFireFiles: 0
+    intensity: 0
+    fadeFireFiles: 1
     mode: 0
     scatter: 0
   tonemapping:

@@ -32,6 +32,16 @@ float4 GetSourceTexelSize () {
 }
 
 
+float3 Dither(float2 uv)
+{
+	float2 pixelPosition = uv * _ScreenParams.xy;
+	float seed = dot(float2(171.0, 231.0), pixelPosition);
+	float3 noise = frac(seed * float3(0.0097, 0.0141, 0.0103)) - 0.5;
+	return noise * 0.0039 * 0.35;
+}
+
+
+
 float4 GetSource(float2 screenUV) {
 	return SAMPLE_TEXTURE2D_LOD(_PostFXSource, sampler_linear_clamp, screenUV,0);
 }
@@ -323,10 +333,16 @@ float3 ApplyColorGradingLUT (float3 color) {
 	);
 }
 
+
+
+
 float4 ApplyColorGradingPassFragment(Varyings input) : SV_TARGET {
 	float4 color = GetSource(input.screenUV);
 	color.rgb = CombineBloomWithSource(color.rgb, input.screenUV);
 	color.rgb = ApplyColorGradingLUT(color.rgb);
+
+
+	color.rgb += Dither(input.screenUV);
 	return color;
 }
 
@@ -334,7 +350,10 @@ float4 ApplyColorGradingWithLumaPassFragment (Varyings input) : SV_TARGET {
 	float4 color = GetSource(input.screenUV);
 	color.rgb = CombineBloomWithSource(color.rgb, input.screenUV);
 	color.rgb = ApplyColorGradingLUT(color.rgb);
+
 	color.a = sqrt(Luminance(color.rgb));
+
+	color.rgb += Dither(input.screenUV);
 	return color;
 }
 

@@ -5,6 +5,9 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Rendering/Custom Post FX Settings")]
 public class PostFXSettings : ScriptableObject
 {
+
+#region BloomSettings
+    //bloom settings
     [Serializable]
     public struct BloomSettings
     {
@@ -49,7 +52,10 @@ public class PostFXSettings : ScriptableObject
         public enum Mode { None,ACES, Neutral,Reinhard}
         public Mode mode;
     }
+#endregion
 
+
+    //tone mapping settings
     [SerializeField]
     ToneMappingSettings tonemapping = default;
 
